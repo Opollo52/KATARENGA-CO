@@ -1,3 +1,6 @@
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+
 plat_1 = [1,2,3,4,
          4,3,1,1,
          3,4,2,2,
@@ -38,3 +41,17 @@ for i in range(0, len(plat_4), 4):
     if i + 3 < len(plat_4):  
         plat_4i[i:i+4] = plat_4[i:i+4][::-1]  
 
+
+colors = {
+    1 : "🟨",
+    2 : "🟦",
+    3 : "🟩",
+    4 : "🟥"
+}
+
+
+x = input("Quel plateau ? ")  
+y = eval("plat_" + x)
+
+for i in range(0, 16, 4):  
+    print("".join(colors[couleur] for couleur in y[i:i+4]))
