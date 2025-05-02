@@ -2,8 +2,8 @@ import pygame
 
 def show_quadrant(screen):
     WHITE = (255, 255, 255)
-    BLUE = (0, 0, 255)
-    RED = (255, 0, 0)
+    BLUE = (50, 100, 200)  # Couleur harmonisée avec game_modes
+    RED = (255, 50, 50)    # Couleur harmonisée avec game_modes
     font = pygame.font.Font(None, 36)
 
     # Définition des boutons
@@ -35,9 +35,12 @@ def show_quadrant(screen):
     while running:
         screen.fill(WHITE)
 
+        # Alternance de couleurs BLUE et RED comme dans game_modes
         colors = [BLUE, RED, BLUE]
-        for rect, color in zip(buttons, colors):
+        for i, (rect, color) in enumerate(zip(buttons, colors)):
             pygame.draw.rect(screen, color, rect)
+            # Ajouter un léger arrondi visuel avec une bordure plus claire
+            pygame.draw.rect(screen, tuple(min(c + 30, 255) for c in color), rect, 2)
 
         for text, rect in zip(texts, buttons):
             draw_centered_text(text, rect, WHITE)
@@ -48,7 +51,8 @@ def show_quadrant(screen):
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if buttons[0].collidepoint(event.pos):  # Voir quadrants
-                    print("Affichage des quadrants sauvegardés (à implémenter)")
+                    from quadrant_viewer import show_quadrant_library
+                    show_quadrant_library(screen)
                 elif buttons[1].collidepoint(event.pos):  # Créer un quadrant
                     from creator import run_creator  # Importation à la volée pour éviter l'import circulaire
                     run_creator(screen)  # Appel de la fonction pour lancer le créateur

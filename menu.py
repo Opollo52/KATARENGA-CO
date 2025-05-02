@@ -4,8 +4,8 @@ from settings import show_settings
 def run_menu(screen):
     # Définition des couleurs
     WHITE = (255, 255, 255)
-    BLUE = (0, 0, 255)
-    RED = (255, 0, 0)
+    BLUE = (50, 100, 200)  # Harmonisé avec game_modes
+    RED = (255, 50, 50)    # Harmonisé avec game_modes
     font = pygame.font.Font(None, 36)
 
     # Configuration dynamique des boutons
@@ -33,9 +33,13 @@ def run_menu(screen):
     while running:
         screen.fill(WHITE)
         
-        # Dessin des boutons
+        # Dessin des boutons avec style harmonisé
         pygame.draw.rect(screen, BLUE, button_start)
         pygame.draw.rect(screen, RED, button_quit)
+        
+        # Bordure légèrement plus claire pour un effet d'arrondi visuel
+        pygame.draw.rect(screen, tuple(min(c + 30, 255) for c in BLUE), button_start, 2)
+        pygame.draw.rect(screen, tuple(min(c + 30, 255) for c in RED), button_quit, 2)
         
         # Textes des boutons
         draw_centered_text("Start", button_start, WHITE)

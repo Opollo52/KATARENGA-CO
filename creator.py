@@ -1,8 +1,16 @@
 import pygame
+import json 
 import os
 import sys
+from config_manager import initialize_quadrants
 
-def show_creator(screen):
+JSON_FILE = "quadrants.json"
+
+
+def show_creator(screen, original_size):
+    # Récupérer la configuration
+    config, _ = initialize_quadrants()
+    
     # Initialisation de Pygame
     pygame.init()
 
@@ -13,28 +21,30 @@ def show_creator(screen):
     PALETTE_X = WIDTH - (CELL_SIZE * 1.5)
     MENU_Y = HEIGHT - 50  # Position du menu
 
-    # Liste des couleurs et des images associées
-    COLOR_TO_IMAGE = {
-        (250, 250, 0): "img/yellow.png",
-        (0, 0, 250): "img/blue.png",
-        (0, 250, 0): "img/green.png",
-        (250, 0, 0): "img/red.png"
+    # Dictionnaire des couleurs avec leurs propriétés
+    COLOR_DATA = {
+        (250, 250, 0): {"image": "img/yellow.png", "value": 1},  # Jaune → 1
+        (0, 0, 250): {"image": "img/blue.png", "value": 3},     # Bleu → 3
+        (0, 250, 0): {"image": "img/green.png", "value": 2},    # Vert → 2
+        (250, 0, 0): {"image": "img/red.png", "value": 4},       # Rouge → 4
     }
 
     # Chemin du dossier contenant les images
     SCRIPT_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
-    SAVE_DIR = os.path.join(SCRIPT_DIR, "quadrant")
+    SAVE_DIR = os.path.join(SCRIPT_DIR, config["quadrants_folder"])
+    
+    # Créer le dossier de sauvegarde s'il n'existe pas
     os.makedirs(SAVE_DIR, exist_ok=True)
 
     # Chargement des images (si elles existent)
     images = {}
-    for color, filename in COLOR_TO_IMAGE.items():
-        img_path = os.path.join(SCRIPT_DIR, filename)
+    for color, data in COLOR_DATA.items():
+        img_path = os.path.join(SCRIPT_DIR, data["image"])
         if os.path.exists(img_path):
             img = pygame.image.load(img_path)
             images[color] = pygame.transform.scale(img, (CELL_SIZE, CELL_SIZE))
         else:
-            print(f"Image {filename} introuvable, la couleur {color} sera utilisée.")
+            print(f"Image {data['image']} introuvable, la couleur {color} sera utilisée.")
 
     # Création de la fenêtre
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -76,14 +86,69 @@ def show_creator(screen):
 
         def reset(self):
             self.history.append([row.copy() for row in self.grid])
-            self.grid = [[(255, 255, 255) for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+            self.grid = [[(250, 250, 250) for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+        
+        def good_message(self, screen, message):
+            font = pygame.font.Font(None, 28) 
+            text_surface = font.render(message, True, (0, 250, 0))
+            text_rect = text_surface.get_rect(center=(screen.get_width() // 2, HEIGHT - 70))
+            screen.blit(text_surface, text_rect)
+            pygame.display.update()
+            pygame.time.delay(2000)  # Délai pour afficher le message
+
+        def show_error_message(self, screen, message):
+            font = pygame.font.Font(None, 28)  # Taille du texte
+            text_surface = font.render(message, True, (250, 0, 0))  # Texte en rouge
+            text_rect = text_surface.get_rect(center=(screen.get_width() // 2, HEIGHT - 70))
+            screen.blit(text_surface, text_rect)
+            pygame.display.update()
+            pygame.time.delay(2000)  # Affichage du message pendant 2 secondes
 
         def save(self):
-            existing_files = len([f for f in os.listdir(SAVE_DIR) if f.startswith("quadrant_")])
-            filename = os.path.join(SAVE_DIR, f"quadrant_{existing_files + 1}.png")
+            # Vérification des cases blanches
+            has_white_cells = False
+            for row in self.grid:
+                for cell in row:
+                    # Vérifier si la cellule est blanche (255, 255, 255) 
+                    # ou si elle n'est pas dans notre ensemble de couleurs valides
+                    if cell == (255, 255, 255) or cell == (250, 250, 250):
+                        has_white_cells = True
+                        break
+                if has_white_cells:
+                    break
+                    
+            if has_white_cells:
+                self.show_error_message(screen, "Impossible de sauvegarder : cases blanches !")
+                return
+
+            # Charger les données JSON existantes ou créer un nouveau dictionnaire
+            data = {}
+            json_path = os.path.join(SCRIPT_DIR, JSON_FILE)
+            
+            if os.path.exists(json_path):
+                try:
+                    with open(json_path, "r") as f:
+                        data = json.load(f)
+                except json.JSONDecodeError:
+                    # Si le fichier existe mais n'est pas un JSON valide, on le réinitialise
+                    data = {}
+            
+            # Déterminer le prochain ID de quadrant
+            next_id = 1
+            while f"quadrant_{next_id}" in data:
+                next_id += 1
+                
+            quadrant_id = f"quadrant_{next_id}"
+            
+            # Sauvegarde de l'image
+            img_filename = f"quadrant_{next_id}.png"
+            img_path = os.path.join(SAVE_DIR, img_filename)
+            
+            # Création de la surface
             quadrant_surface = pygame.Surface((GRID_SIZE * CELL_SIZE, GRID_SIZE * CELL_SIZE))
             quadrant_surface.fill((255, 255, 255))
 
+            # Dessin de la grille
             for row in range(GRID_SIZE):
                 for col in range(GRID_SIZE):
                     color = self.grid[row][col]
@@ -93,12 +158,36 @@ def show_creator(screen):
                         pygame.draw.rect(quadrant_surface, color, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE))
                     pygame.draw.rect(quadrant_surface, (0, 0, 0), (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE), 2)
 
-            pygame.image.save(quadrant_surface, filename)
-            print(f"Grille sauvegardée sous {filename}")
+            pygame.image.save(quadrant_surface, img_path)
+            
+            # Conversion des couleurs en valeurs numériques pour chaque cellule
+            grid_data = []
+            for row in self.grid:
+                row_data = []
+                for cell in row:
+                    if cell in COLOR_DATA:
+                        row_data.append(COLOR_DATA[cell]["value"])
+                    else:
+                        row_data.append(0)  # Valeur par défaut si couleur inconnue
+                grid_data.append(row_data)
+            
+            # Création de l'entrée dans le dictionnaire pour ce quadrant
+            data[quadrant_id] = {
+                "image_path": os.path.abspath(img_path),  # Chemin absolu
+                "grid": grid_data
+            }
 
+            # Sauvegarde du fichier JSON
+            with open(json_path, "w") as f:
+                json.dump(data, f, indent=4)
+
+            self.good_message(screen, f"Quadrant {next_id} sauvegardé avec succès!")
+            
+           
+            
     class Palette:
         def __init__(self):
-            self.colors = list(COLOR_TO_IMAGE.keys())
+            self.colors = list(COLOR_DATA.keys())
             self.rects = [(pygame.Rect(PALETTE_X, i * (CELL_SIZE + 5), CELL_SIZE, CELL_SIZE), color) for i, color in enumerate(self.colors)]
             self.selected_color = None
 
@@ -164,6 +253,8 @@ def show_creator(screen):
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                # Restaurer la taille originale avant de quitter
+                pygame.display.set_mode(original_size)
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = event.pos
@@ -174,6 +265,8 @@ def show_creator(screen):
                 else:
                     action = menu.get_action(x, y)
                     if action == "Retour":
+                        # Restaurer la taille originale avant de revenir
+                        pygame.display.set_mode(original_size)
                         return
                     elif action == "Retour arrière":
                         quadrant.undo()
@@ -186,7 +279,10 @@ def show_creator(screen):
 
         pygame.display.flip()
 
-    pygame.quit()
+    # Restaurer la taille originale avant de quitter
+    pygame.display.set_mode(original_size)
 
 def run_creator(screen):
-    show_creator(screen)
+    # Sauvegarder la taille originale avant de redimensionner
+    original_size = screen.get_size()
+    show_creator(screen, original_size)
