@@ -16,7 +16,7 @@ def show_quadrant_library(screen):
     original_size = screen.get_size()
     
     # Configuration
-    WIDTH, HEIGHT = 175, 100
+    WIDTH, HEIGHT = 675, 500
     pygame.display.set_caption("Bibliothèque de Quadrants")
     
     # Couleurs
@@ -264,6 +264,9 @@ def show_quadrant_library(screen):
                             view_mode = "library"
             
         pygame.display.flip()
+    
+    # Restaurer la taille d'écran originale avant de quitter
+    pygame.display.set_mode(original_size)
 
 if __name__ == "__main__":
     pygame.init()
