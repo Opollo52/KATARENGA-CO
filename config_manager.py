@@ -9,7 +9,7 @@ def read_config():
     Lit le fichier de configuration et retourne un dictionnaire de paramètres
     """
     config = {
-        "width": 500,
+        "width": 800,
         "height": 500,
         "default_quadrants": [1, 2, 3, 4, 5, 6, 7, 8],
         "quadrants_folder": "quadrant",

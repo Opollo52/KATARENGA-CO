@@ -1,5 +1,4 @@
 import pygame
-from settings import show_settings
 
 def run_menu(screen):
     # Définition des couleurs
@@ -51,6 +50,8 @@ def run_menu(screen):
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if button_start.collidepoint(event.pos):
+                    # Importer ici pour éviter l'importation circulaire
+                    from settings import show_settings
                     show_settings(screen)
                 if button_quit.collidepoint(event.pos):
                     running = False

@@ -1,8 +1,9 @@
 import pygame
 from quadrant import show_quadrant
-from game_modes import show_game_modes  # Import de notre nouvelle fonction
+from game_modes import show_game_modes
 
 def show_settings(screen):
+    # Définition des couleurs
     WHITE = (255, 255, 255)
     BLUE = (50, 100, 200)  # Harmonisé avec game_modes
     RED = (255, 50, 50)    # Harmonisé avec game_modes
@@ -10,22 +11,20 @@ def show_settings(screen):
 
     # Configuration dynamique des boutons
     screen_rect = screen.get_rect()
-    texts = ["Jouer", "Mode de jeu", "Créateur de quadrant", "Retour"]
+    texts = ["Jouer", "Quadrant", "Paramètres", "Quitter"]
     max_width = max(font.render(text, True, WHITE).get_width() for text in texts)
     button_width = max_width + 40
     button_height = 50
     spacing = 20
 
     # Calcul des positions
-    total_height = (button_height * 4) + (spacing * 3)
+    total_height = (button_height * len(texts)) + (spacing * (len(texts) - 1))
     start_y = (screen_rect.height - total_height) // 2
 
     # Création des boutons
     buttons = [
-        pygame.Rect((screen_rect.width - button_width) // 2, 
-                    start_y + i * (button_height + spacing), 
-                    button_width, button_height)
-        for i in range(4)
+        pygame.Rect((screen_rect.width - button_width)//2, start_y + i * (button_height + spacing), button_width, button_height)
+        for i in range(len(texts))
     ]
 
     def draw_centered_text(text, rect, color):
@@ -37,33 +36,29 @@ def show_settings(screen):
     while running:
         screen.fill(WHITE)
         
-        # Dessin des boutons avec alternance BLUE et RED comme dans game_modes
-        colors = [BLUE, RED, BLUE, RED]
-        for rect, color in zip(buttons, colors):
+        # Dessin des boutons avec style harmonisé - Utilisation des couleurs bleue et rouge uniquement
+        colors = [BLUE, RED, BLUE, RED]  # Couleurs pour chaque bouton - BLUE remplace GREEN
+        
+        for i, (rect, color) in enumerate(zip(buttons, colors)):
             pygame.draw.rect(screen, color, rect)
             # Bordure légèrement plus claire pour un effet d'arrondi visuel
             pygame.draw.rect(screen, tuple(min(c + 30, 255) for c in color), rect, 2)
-        
-        # Textes des boutons
-        texts = ["Jouer", "Mode de jeu", "Créateur de quadrant", "Retour"]
-        for text, rect in zip(texts, buttons):
-            draw_centered_text(text, rect, WHITE)
+            
+            # Textes des boutons
+            draw_centered_text(texts[i], rect, WHITE)
 
         # Gestion des événements
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-                pygame.quit()
-            
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if buttons[0].collidepoint(event.pos):  # Jouer
-                    from game_setup import show_game_setup
-                    show_game_setup(screen)
-                elif buttons[1].collidepoint(event.pos):  # Mode de jeu
-                    show_game_modes(screen)  # Appel à notre nouvelle fonction
-                elif buttons[2].collidepoint(event.pos):  # Créateur de quadrant
-                    show_quadrant(screen)  # Lancer la gestion des quadrants
-                elif buttons[3].collidepoint(event.pos):  # Bouton Retour
+                    show_game_modes(screen)  # Utilise directement show_game_modes avec le bouton Jouer
+                elif buttons[1].collidepoint(event.pos):  # Quadrant
+                    show_quadrant(screen)
+                elif buttons[2].collidepoint(event.pos):  # Paramètres
+                    show_settings(screen)
+                elif buttons[3].collidepoint(event.pos):  # Quitter
                     running = False
 
         pygame.display.flip()

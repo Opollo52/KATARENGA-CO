@@ -7,7 +7,7 @@ from config_manager import initialize_quadrants
 JSON_FILE = "quadrants.json"
 
 
-def show_creator(screen, original_size):
+def show_creator(screen):
     # Récupérer la configuration
     config, _ = initialize_quadrants()
     
@@ -47,7 +47,6 @@ def show_creator(screen, original_size):
             print(f"Image {data['image']} introuvable, la couleur {color} sera utilisée.")
 
     # Création de la fenêtre
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Constructeur de Quadrant")
 
     class Quadrant:
@@ -253,8 +252,6 @@ def show_creator(screen, original_size):
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                # Restaurer la taille originale avant de quitter
-                pygame.display.set_mode(original_size)
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = event.pos
@@ -265,8 +262,6 @@ def show_creator(screen, original_size):
                 else:
                     action = menu.get_action(x, y)
                     if action == "Retour":
-                        # Restaurer la taille originale avant de revenir
-                        pygame.display.set_mode(original_size)
                         return
                     elif action == "Retour arrière":
                         quadrant.undo()
@@ -279,10 +274,6 @@ def show_creator(screen, original_size):
 
         pygame.display.flip()
 
-    # Restaurer la taille originale avant de quitter
-    pygame.display.set_mode(original_size)
 
 def run_creator(screen):
-    # Sauvegarder la taille originale avant de redimensionner
-    original_size = screen.get_size()
-    show_creator(screen, original_size)
+    show_creator(screen)

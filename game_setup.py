@@ -13,7 +13,6 @@ def show_game_setup(screen):
     
     # Configuration
     WIDTH, HEIGHT = 800, 600
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Configuration de partie")
     
     # Couleurs
@@ -393,7 +392,6 @@ def show_game_setup(screen):
         # Traitement des événements
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.display.set_mode(original_size)
                 return
                 
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -409,7 +407,6 @@ def show_game_setup(screen):
                 elif event.button == 1:
                     # Clic sur le bouton retour
                     if back_button.collidepoint(event.pos):
-                        pygame.display.set_mode(original_size)
                         return
                     
                     # Clic sur le bouton commencer
@@ -483,9 +480,6 @@ def show_game_setup(screen):
                 scroll_y = max(0, min(max_scroll, scroll_y - event.y * scroll_speed))
         
         pygame.display.flip()
-    
-    # Restaurer la taille d'écran originale avant de quitter
-    pygame.display.set_mode(original_size)
 
 if __name__ == "__main__":
     pygame.init()

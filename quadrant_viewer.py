@@ -16,8 +16,7 @@ def show_quadrant_library(screen):
     original_size = screen.get_size()
     
     # Configuration
-    WIDTH, HEIGHT = 675, 500
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    WIDTH, HEIGHT = 175, 100
     pygame.display.set_caption("Bibliothèque de Quadrants")
     
     # Couleurs
@@ -224,7 +223,6 @@ def show_quadrant_library(screen):
         # Traitement des événements
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.display.set_mode(original_size)
                 return
                 
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -251,7 +249,6 @@ def show_quadrant_library(screen):
                         
                         # Clic sur le bouton retour
                         if back_button.collidepoint(event.pos):
-                            pygame.display.set_mode(original_size)
                             return
                 else:
                     # En mode détail
@@ -261,16 +258,12 @@ def show_quadrant_library(screen):
                             view_mode = "library"
                         # Clic sur le bouton retour principal (en bas)
                         elif back_button.collidepoint(event.pos):
-                            pygame.display.set_mode(original_size)
                             return
                         # Tout autre clic (sauf sur les boutons) revient à la bibliothèque
                         elif not back_button.collidepoint(event.pos):
                             view_mode = "library"
             
         pygame.display.flip()
-    
-    # Restaurer la taille d'écran originale avant de quitter
-    pygame.display.set_mode(original_size)
 
 if __name__ == "__main__":
     pygame.init()
