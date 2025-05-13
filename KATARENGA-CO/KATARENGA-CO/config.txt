@@ -1,0 +1,5 @@
+500
+500
+default_quadrants: 8
+quadrants_folder: quadrant
+use_images: true
