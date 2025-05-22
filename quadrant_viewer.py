@@ -1,8 +1,6 @@
 # quadrant_viewer.py modifié
 import pygame
-import json
 import os
-import sys
 from config_manager import initialize_quadrants
 
 def load_quadrants():

@@ -2,13 +2,14 @@ import json
 import os
 import sys
 import pygame
+import numpy as np
 
 def read_config():
     """
     Lit le fichier de configuration et retourne un dictionnaire de paramètres
     """
     config = {
-        "width": 500,
+        "width": 800,
         "height": 500,
         "default_quadrants": [1, 2, 3, 4, 5, 6, 7, 8],
         "quadrants_folder": "quadrant",
@@ -54,30 +55,30 @@ def create_default_quadrants(config):
     # Créer le dossier des quadrants s'il n'existe pas
     os.makedirs(quadrants_folder, exist_ok=True)
     
-    # Quadrants de gauche définis manuellement 
+    # Quadrants définis manuellement :  
     left_quadrants = [
-        # Quadrant 1 (haut gauche)
+        # Quadrant 1 
         [
             [1, 3, 2, 4],
             [4, 2, 1, 1],
             [2, 4, 3, 3],
             [3, 1, 4, 2]
         ],
-        # Quadrant 3 (2ème ligne gauche)
+        # Quadrant 3 
         [
             [2, 3, 1, 4],
             [4, 3, 1, 2],
             [1, 4, 2, 3],
             [3, 2, 4, 1]
         ],
-        # Quadrant 5 (3ème ligne gauche)
+        # Quadrant 5
         [
             [2, 3, 4, 1],
             [3, 2, 3, 4],
             [1, 4, 1, 2],
             [4, 2, 1, 3]
         ],
-        # Quadrant 7 (4ème ligne gauche)
+        # Quadrant 7 
         [
             [1, 3, 2, 4],
             [4, 3, 1, 1],
@@ -86,7 +87,7 @@ def create_default_quadrants(config):
         ]
     ]
     
-    # Générer les versions miroir pour les quadrants de droite
+    # Générer les versions miroir 
     all_quadrants = []
     for q in left_quadrants:
         # Ajouter le quadrant original (gauche)
@@ -104,32 +105,19 @@ def create_default_quadrants(config):
     # Pygame setup
     pygame.init()
     
-    # Charger les images une seule fois
-    try:
-        images = {
-            1: pygame.image.load(os.path.join(script_dir, "img", "yellow.png")),  # Jaune
-            2: pygame.image.load(os.path.join(script_dir, "img", "green.png")),   # Vert
-            3: pygame.image.load(os.path.join(script_dir, "img", "blue.png")),    # Bleu
-            4: pygame.image.load(os.path.join(script_dir, "img", "red.png"))      # Rouge
-        }
+    # Charger les images 
+    images = {
+        1: pygame.image.load(os.path.join(script_dir, "img", "yellow.png")),  
+        2: pygame.image.load(os.path.join(script_dir, "img", "green.png")),   
+        3: pygame.image.load(os.path.join(script_dir, "img", "blue.png")),    
+        4: pygame.image.load(os.path.join(script_dir, "img", "red.png"))      
+    }
+    
+    # Redimensionner les images
+    for key in images:
+        images[key] = pygame.transform.scale(images[key], (cell_size, cell_size))
         
-        # Redimensionner les images
-        for key in images:
-            images[key] = pygame.transform.scale(images[key], (cell_size, cell_size))
-            
-        use_images = True
-    except:
-        # Si les images ne peuvent pas être chargées, utiliser des couleurs
-        images = {}
-        use_images = False
-        
-        # Couleurs de remplacement
-        colors = {
-            1: (250, 250, 0),  # Jaune
-            2: (0, 250, 0),    # Vert
-            3: (0, 0, 250),    # Bleu
-            4: (250, 0, 0)     # Rouge
-        }
+    use_images = True
     
     # Créer chaque quadrant
     for i, grid in enumerate(all_quadrants):
