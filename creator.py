@@ -8,25 +8,40 @@ JSON_FILE = "quadrants.json"
 
 
 def show_creator(screen):
-    # Récupérer la configuration
+    # Récupérer la config
     config, _ = initialize_quadrants()
     
-    # Initialisation de Pygame
     pygame.init()
 
-    # Définition des constantes
-    WIDTH, HEIGHT = 675, 500
+    # Utiliser les dimensions actuelles de l'écran pour le centrage
+    WIDTH, HEIGHT = screen.get_width(), screen.get_height()
     GRID_SIZE = 4
     CELL_SIZE = 100
-    PALETTE_X = WIDTH - (CELL_SIZE * 1.5)
-    MENU_Y = HEIGHT - 50  # Position du menu
-
-    # Dictionnaire des couleurs avec leurs propriétés
+    GRID_WIDTH = GRID_SIZE * CELL_SIZE
+    GRID_HEIGHT = GRID_SIZE * CELL_SIZE
+    
+    # Centrer la grille
+    GRID_X = (WIDTH - GRID_WIDTH) // 2
+    GRID_Y = (HEIGHT - GRID_HEIGHT - 80) // 2  # 80 pour l'espace des boutons
+    
+    # Position de la palette (à droite de la grille)
+    PALETTE_WIDTH = CELL_SIZE
+    PALETTE_X = GRID_X + GRID_WIDTH + 30
+    PALETTE_Y = GRID_Y
+    
+    # Position de l'indicateur de couleur (à gauche du plateau)
+    INDICATOR_X = GRID_X - 200
+    INDICATOR_Y = GRID_Y + 70   # Ajusté pour l'affichage horizontal
+    
+    # Position des boutons du menu (en bas)
+    MENU_Y = GRID_Y + GRID_HEIGHT + 20
+    
+    # Dictionnaire couleurs et img
     COLOR_DATA = {
-        (250, 250, 0): {"image": "img/yellow.png", "value": 1},  # Jaune → 1
-        (0, 0, 250): {"image": "img/blue.png", "value": 3},     # Bleu → 3
-        (0, 250, 0): {"image": "img/green.png", "value": 2},    # Vert → 2
-        (250, 0, 0): {"image": "img/red.png", "value": 4},       # Rouge → 4
+        (250, 250, 0): {"image": "img/yellow.png", "value": 1},
+        (0, 0, 250): {"image": "img/blue.png", "value": 3}, 
+        (0, 250, 0): {"image": "img/green.png", "value": 2},
+        (250, 0, 0): {"image": "img/red.png", "value": 4}, 
     }
 
     # Chemin du dossier contenant les images
@@ -59,15 +74,22 @@ def show_creator(screen):
             for row in range(GRID_SIZE):
                 for col in range(GRID_SIZE):
                     color = self.grid[row][col]
+                    rect = pygame.Rect(GRID_X + col * CELL_SIZE, GRID_Y + row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                    
                     if color in images:
-                        screen.blit(images[color], (col * CELL_SIZE, row * CELL_SIZE))
+                        screen.blit(images[color], rect.topleft)
                     else:
-                        pygame.draw.rect(screen, color, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE))
-                    pygame.draw.rect(screen, (0, 0, 0), (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE), 2)
+                        pygame.draw.rect(screen, color, rect)
+                    pygame.draw.rect(screen, (0, 0, 0), rect, 2)
 
         def update_color(self, x, y, color):
-            col = x // CELL_SIZE
-            row = y // CELL_SIZE
+            # Vérifier si le clic est dans la grille
+            if x < GRID_X or x >= GRID_X + GRID_WIDTH or y < GRID_Y or y >= GRID_Y + GRID_HEIGHT:
+                return
+                
+            col = (x - GRID_X) // CELL_SIZE
+            row = (y - GRID_Y) // CELL_SIZE
+            
             if 0 <= col < GRID_SIZE and 0 <= row < GRID_SIZE:
                 self.history.append([row.copy() for row in self.grid])
                 self.grid[row][col] = color
@@ -90,7 +112,7 @@ def show_creator(screen):
         def good_message(self, screen, message):
             font = pygame.font.Font(None, 28) 
             text_surface = font.render(message, True, (0, 250, 0))
-            text_rect = text_surface.get_rect(center=(screen.get_width() // 2, HEIGHT - 70))
+            text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT - 70))
             screen.blit(text_surface, text_rect)
             pygame.display.update()
             pygame.time.delay(2000)  # Délai pour afficher le message
@@ -98,7 +120,7 @@ def show_creator(screen):
         def show_error_message(self, screen, message):
             font = pygame.font.Font(None, 28)  # Taille du texte
             text_surface = font.render(message, True, (250, 0, 0))  # Texte en rouge
-            text_rect = text_surface.get_rect(center=(screen.get_width() // 2, HEIGHT - 70))
+            text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT - 70))
             screen.blit(text_surface, text_rect)
             pygame.display.update()
             pygame.time.delay(2000)  # Affichage du message pendant 2 secondes
@@ -151,11 +173,13 @@ def show_creator(screen):
             for row in range(GRID_SIZE):
                 for col in range(GRID_SIZE):
                     color = self.grid[row][col]
+                    rect = pygame.Rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                    
                     if color in images:
-                        quadrant_surface.blit(images[color], (col * CELL_SIZE, row * CELL_SIZE))
+                        quadrant_surface.blit(images[color], rect)
                     else:
-                        pygame.draw.rect(quadrant_surface, color, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE))
-                    pygame.draw.rect(quadrant_surface, (0, 0, 0), (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE), 2)
+                        pygame.draw.rect(quadrant_surface, color, rect)
+                    pygame.draw.rect(quadrant_surface, (0, 0, 0), rect, 2)
 
             pygame.image.save(quadrant_surface, img_path)
             
@@ -187,10 +211,27 @@ def show_creator(screen):
     class Palette:
         def __init__(self):
             self.colors = list(COLOR_DATA.keys())
-            self.rects = [(pygame.Rect(PALETTE_X, i * (CELL_SIZE + 5), CELL_SIZE, CELL_SIZE), color) for i, color in enumerate(self.colors)]
+            self.rects = []
+            
+            # Créer les rectangles de la palette, centrés et empilés verticalement
+            for i, color in enumerate(self.colors):
+                rect = pygame.Rect(
+                    PALETTE_X, 
+                    PALETTE_Y + i * (CELL_SIZE + 5), 
+                    CELL_SIZE, 
+                    CELL_SIZE
+                )
+                self.rects.append((rect, color))
+                
             self.selected_color = None
 
         def draw(self, screen):
+            # Titre de la palette
+            font = pygame.font.Font(None, 24)
+            title = font.render("Palette", True, (0, 0, 0))
+            title_rect = title.get_rect(center=(PALETTE_X + CELL_SIZE//2, PALETTE_Y - 20))
+            screen.blit(title, title_rect)
+            
             for rect, color in self.rects:
                 if color in images:
                     screen.blit(images[color], rect.topleft)
@@ -198,14 +239,32 @@ def show_creator(screen):
                     pygame.draw.rect(screen, color, rect)
                 pygame.draw.rect(screen, (0, 0, 0), rect, 2)
 
-            # Affichage de la couleur sélectionnée (taille réduite à 40x40)
+            # Affichage de la couleur sélectionnée avec l'indicateur centré en dessous
             if self.selected_color:
-                preview_rect = pygame.Rect(PALETTE_X - 50, 10, 40, 40)
+                font = pygame.font.Font(None, 24)
+                
+                # Texte complet "Couleur sélectionnée"
+                text_complet = font.render("Couleur sélectionnée:", True, (0, 0, 0))
+                text_rect = text_complet.get_rect(topleft=(INDICATOR_X, INDICATOR_Y))
+                screen.blit(text_complet, text_rect)
+                
+                # Taille de l'indicateur de couleur
+                indicator_size = 50
+                
+                # Position de l'indicateur centré en dessous du texte
+                indicator_x = INDICATOR_X + text_rect.width//2 - indicator_size//2
+                indicator_y = INDICATOR_Y + text_rect.height + 10
+                indicator_rect = pygame.Rect(indicator_x, indicator_y, indicator_size, indicator_size)
+                
+                # Afficher l'image ou la couleur
                 if self.selected_color in images:
-                    preview_image = pygame.transform.scale(images[self.selected_color], (40, 40))
-                    screen.blit(preview_image, preview_rect.topleft)
+                    preview_image = pygame.transform.scale(images[self.selected_color], (indicator_size, indicator_size))
+                    screen.blit(preview_image, indicator_rect.topleft)
                 else:
-                    pygame.draw.rect(screen, self.selected_color, preview_rect)
+                    pygame.draw.rect(screen, self.selected_color, indicator_rect)
+                
+                # Bordure pour l'indicateur
+                pygame.draw.rect(screen, (0, 0, 0), indicator_rect, 2)
 
         def get_color_at(self, x, y):
             for rect, color in self.rects:
@@ -216,26 +275,47 @@ def show_creator(screen):
 
     class Menu:
         def __init__(self):
-            self.buttons = {
-                "Retour": pygame.Rect(20, MENU_Y, 100, 40),
-                "Retour arrière": pygame.Rect(130, MENU_Y, 150, 40),
-                "Avancer": pygame.Rect(290, MENU_Y, 100, 40),
-                "Reset": pygame.Rect(400, MENU_Y, 100, 40),
-                "Sauvegarder": pygame.Rect(510, MENU_Y, 150, 40)
-            }
+            # Calculer la largeur totale des boutons avec espacement
+            button_texts = ["Retour", "Retour arrière", "Avancer", "Reset", "Sauvegarder"]
+            button_font = pygame.font.Font(None, 24)
+            button_widths = [button_font.render(text, True, (0, 0, 0)).get_width() + 20 for text in button_texts]
+            button_heights = [40] * len(button_texts)
+            button_spacing = 10
+            
+            total_width = sum(button_widths) + (button_spacing * (len(button_texts) - 1))
+            
+            # Position centrée pour les boutons
+            start_x = (WIDTH - total_width) // 2
+            current_x = start_x
+            
+            # Créer les boutons centrés horizontalement
+            self.buttons = {}
+            for i, text in enumerate(button_texts):
+                button_rect = pygame.Rect(current_x, MENU_Y, button_widths[i], button_heights[i])
+                self.buttons[text] = button_rect
+                current_x += button_widths[i] + button_spacing
 
         def draw(self, screen):
             for text, rect in self.buttons.items():
                 pygame.draw.rect(screen, (200, 200, 200), rect)
                 pygame.draw.rect(screen, (0, 0, 0), rect, 2)
                 font = pygame.font.Font(None, 24)
-                screen.blit(font.render(text, True, (0, 0, 0)), (rect.x + 10, rect.y + 10))
+                text_surf = font.render(text, True, (0, 0, 0))
+                text_rect = text_surf.get_rect(center=rect.center)
+                screen.blit(text_surf, text_rect)
 
         def get_action(self, x, y):
             for text, rect in self.buttons.items():
                 if rect.collidepoint(x, y):
                     return text
             return None
+
+    # Titre centré
+    def draw_title(screen):
+        font = pygame.font.Font(None, 36)
+        title = font.render("Constructeur de Quadrant", True, (0, 0, 0))
+        title_rect = title.get_rect(center=(WIDTH//2, GRID_Y - 30))
+        screen.blit(title, title_rect)
 
     # Initialisation des objets
     quadrant = Quadrant()
@@ -246,6 +326,14 @@ def show_creator(screen):
     running = True
     while running:
         screen.fill((255, 255, 255))
+        
+        # Dessiner le titre
+        draw_title(screen)
+        
+        # Dessiner une bordure autour de la grille
+        grid_border = pygame.Rect(GRID_X - 2, GRID_Y - 2, GRID_WIDTH + 4, GRID_HEIGHT + 4)
+        pygame.draw.rect(screen, (0, 0, 0), grid_border, 2)
+        
         quadrant.draw(screen)
         palette.draw(screen)
         menu.draw(screen)
@@ -255,7 +343,7 @@ def show_creator(screen):
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = event.pos
-                if y < HEIGHT - 50:
+                if y < MENU_Y:
                     color = palette.get_color_at(x, y)
                     if not color and palette.selected_color:
                         quadrant.update_color(x, y, palette.selected_color)

@@ -38,8 +38,8 @@ def get_valid_moves(row, col, board_grid, pawn_grid):
             (1, -1),  (1, 0),  (1, 1)
         ]
         
-        for move_ligne, move_column in directions:
-            r, c = row + move_ligne, col + move_column
+        for move_row, move_column in directions:
+            r, c = row + move_row, col + move_column
             if 0 <= r < 8 and 0 <= c < 8:
                 # Si la case est vide, toujours autorisé
                 if pawn_grid[r][c] == 0:
@@ -51,8 +51,8 @@ def get_valid_moves(row, col, board_grid, pawn_grid):
     elif cell_color == 4:  # Rouge: déplacement en tour
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         
-        for move_ligne, move_column in directions:
-            r, c = row + move_ligne, col + move_column
+        for move_row, move_column in directions:
+            r, c = row + move_row, col + move_column
             # Continuer dans cette direction jusqu'à rencontrer un obstacle
             while 0 <= r < 8 and 0 <= c < 8:
                 # Si la case est vide
@@ -69,14 +69,14 @@ def get_valid_moves(row, col, board_grid, pawn_grid):
                     break
                 
                 # Avancer d'une case dans la même direction
-                r += move_ligne
+                r += move_row
                 c += move_column
     
     elif cell_color == 1:  # Jaune: déplacement en fou
         directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
         
-        for move_ligne, move_column in directions:
-            r, c = row + move_ligne, col + move_column
+        for move_row, move_column in directions:
+            r, c = row + move_row, col + move_column
             # Continuer dans cette direction jusqu'à rencontrer un obstacle
             while 0 <= r < 8 and 0 <= c < 8:
                 # Si la case est vide
@@ -93,7 +93,7 @@ def get_valid_moves(row, col, board_grid, pawn_grid):
                     break
                 
                 # Avancer d'une case dans la même direction
-                r += move_ligne
+                r += move_row
                 c += move_column
     
     elif cell_color == 2:  # Vert: déplacement en cavalier
@@ -104,8 +104,8 @@ def get_valid_moves(row, col, board_grid, pawn_grid):
             (2, -1),  (2, 1)
         ]
         
-        for move_ligne, move_column in knight_moves:
-            r, c = row + move_ligne, col + move_column
+        for move_row, move_column in knight_moves:
+            r, c = row + move_row, col + move_column
             if 0 <= r < 8 and 0 <= c < 8:
                 # Si la case est vide
                 if pawn_grid[r][c] == 0:

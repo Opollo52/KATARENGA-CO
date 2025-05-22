@@ -1,5 +1,5 @@
 import pygame
-
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 def run_menu(screen):
     # Définition des couleurs
     WHITE = (255, 255, 255)

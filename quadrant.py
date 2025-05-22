@@ -1,10 +1,14 @@
 import pygame
 
 def show_quadrant(screen):
+    # Récupérer les dimensions de l'écran
+    WIDTH, HEIGHT = screen.get_width(), screen.get_height()
+    
     WHITE = (255, 255, 255)
     BLUE = (50, 100, 200)  # Couleur harmonisée avec game_modes
     RED = (255, 50, 50)    # Couleur harmonisée avec game_modes
     font = pygame.font.Font(None, 36)
+    title_font = pygame.font.Font(None, 42)  # Police plus grande pour le titre
 
     # Définition des boutons
     screen_rect = screen.get_rect()
@@ -15,11 +19,12 @@ def show_quadrant(screen):
     spacing = 20
 
     total_height = (button_height * 3) + (spacing * 2)
-    start_y = (screen_rect.height - total_height) // 2
+    # Centrage vertical
+    start_y = (HEIGHT - total_height) // 2
 
     buttons = [
         pygame.Rect(
-            (screen_rect.width - button_width) // 2,
+            (WIDTH - button_width) // 2,  # Centrage horizontal
             start_y + i * (button_height + spacing),
             button_width,
             button_height
@@ -34,6 +39,11 @@ def show_quadrant(screen):
     running = True
     while running:
         screen.fill(WHITE)
+        
+        # Titre centré au-dessus des boutons
+        title = title_font.render("Menu des Quadrants", True, (0, 0, 0))
+        title_rect = title.get_rect(center=(WIDTH//2, start_y - 40))
+        screen.blit(title, title_rect)
 
         # Alternance de couleurs BLUE et RED comme dans game_modes
         colors = [BLUE, RED, BLUE]
@@ -42,7 +52,7 @@ def show_quadrant(screen):
             # Ajouter un léger arrondi visuel avec une bordure plus claire
             pygame.draw.rect(screen, tuple(min(c + 30, 255) for c in color), rect, 2)
 
-        for text, rect in zip(texts, buttons):
+        for i, (text, rect) in enumerate(zip(texts, buttons)):
             draw_centered_text(text, rect, WHITE)
 
         for event in pygame.event.get():

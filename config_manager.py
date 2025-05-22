@@ -2,14 +2,13 @@ import json
 import os
 import sys
 import pygame
-import numpy as np
 
 def read_config():
     """
     Lit le fichier de configuration et retourne un dictionnaire de paramètres
     """
     config = {
-        "width": 800,
+        "width": 500,
         "height": 500,
         "default_quadrants": [1, 2, 3, 4, 5, 6, 7, 8],
         "quadrants_folder": "quadrant",

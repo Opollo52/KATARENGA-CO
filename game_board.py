@@ -1,5 +1,4 @@
 import pygame
-import numpy as np
 import os
 import sys
 from pawn import get_valid_moves, highlight_possible_moves, is_valid_move
@@ -10,30 +9,30 @@ def create_game_board(quadrant_grid_data):
     """
     Crée un plateau de jeu à partir des données de grille des 4 quadrants
     """
-    # Créer une grille 8x8 vide pour le plateau
-    board_grid = np.zeros((8, 8), dtype=int)
+    # Créer une grille 8x8 vide pour le plateau (utilise des listes au lieu de numpy)
+    board_grid = [[0 for _ in range(8)] for _ in range(8)]
     
     # Remplir la grille avec les données des quadrants
     if len(quadrant_grid_data) == 4:
-        # Quadrant 1
+        # Quadrant 1 (haut gauche)
         for i in range(4):
             for j in range(4):
                 if i < len(quadrant_grid_data[0]) and j < len(quadrant_grid_data[0][i]):
                     board_grid[i][j] = quadrant_grid_data[0][i][j]
                     
-        # Quadrant 2
+        # Quadrant 2 (haut droite)
         for i in range(4):
             for j in range(4):
                 if i < len(quadrant_grid_data[1]) and j < len(quadrant_grid_data[1][i]):
                     board_grid[i][j+4] = quadrant_grid_data[1][i][j]
                     
-        # Quadrant 3
+        # Quadrant 3 (bas gauche)
         for i in range(4):
             for j in range(4):
                 if i < len(quadrant_grid_data[2]) and j < len(quadrant_grid_data[2][i]):
                     board_grid[i+4][j] = quadrant_grid_data[2][i][j]
                     
-        # Quadrant 4
+        # Quadrant 4 (bas droite)
         for i in range(4):
             for j in range(4):
                 if i < len(quadrant_grid_data[3]) and j < len(quadrant_grid_data[3][i]):
@@ -44,8 +43,8 @@ def initialize_pawns_for_game_mode(game_mode):
     """
     Initialise les pions selon le mode de jeu sélectionné
     """
-    # Créer une grille 8x8 vide pour les pions
-    pawn_grid = np.zeros((8, 8), dtype=int)
+    # Créer une grille 8x8 vide pour les pions (utilise des listes au lieu de numpy)
+    pawn_grid = [[0 for _ in range(8)] for _ in range(8)]
     
     if game_mode == 0:  # Katarenga
         # Pions rouges sur la première ligne

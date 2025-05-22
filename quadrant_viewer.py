@@ -1,3 +1,4 @@
+# quadrant_viewer.py modifié
 import pygame
 import json
 import os
@@ -12,11 +13,10 @@ def load_quadrants():
 
 def show_quadrant_library(screen):
     """Affiche la bibliothèque de quadrants avec une interface épurée"""
-    # Sauvegarder la taille originale
-    original_size = screen.get_size()
+    # Obtenir les dimensions actuelles de l'écran
+    screen_rect = screen.get_rect()
+    WIDTH, HEIGHT = screen_rect.width, screen_rect.height
     
-    # Configuration
-    WIDTH, HEIGHT = 675, 500
     pygame.display.set_caption("Bibliothèque de Quadrants")
     
     # Couleurs
@@ -26,9 +26,9 @@ def show_quadrant_library(screen):
     DARK_GRAY = (100, 100, 100)
     BLUE = (50, 100, 200)  # Couleur pour le bouton Retour (comme dans game_modes)
     
-    # Polices
-    title_font = pygame.font.Font(None, 36)
-    button_font = pygame.font.Font(None, 30)
+    # Polices - tailles adaptatives
+    title_font = pygame.font.Font(None, int(HEIGHT * 0.06))  # 6% de la hauteur
+    button_font = pygame.font.Font(None, int(HEIGHT * 0.04))  # 4% de la hauteur
     
     # Chargement des quadrants
     quadrants = load_quadrants()
@@ -50,34 +50,33 @@ def show_quadrant_library(screen):
     view_mode = "library"  # "library" ou "detail"
     selected_quadrant = None
     
-    # Bouton retour harmonisé avec le style des autres pages
-    button_width = 120
-    button_height = 40
-    back_button = pygame.Rect(20, HEIGHT - 60, button_width, button_height)
+    # Bouton retour harmonisé avec le style des autres pages - dimensions adaptatives
+    button_width = WIDTH * 0.15  # 15% de la largeur
+    button_height = HEIGHT * 0.08  # 8% de la hauteur
+    back_button = pygame.Rect(WIDTH * 0.05, HEIGHT - HEIGHT * 0.12, button_width, button_height)
     
     # Variables pour le défilement de la bibliothèque
     scroll_y = 0
-    scroll_speed = 30
+    scroll_speed = int(HEIGHT * 0.05)  # 5% de la hauteur
     max_scroll = 0  # Sera calculé dynamiquement
     
     # Boutons de défilement
-    scroll_button_width = 30
-    scroll_button_height = 30
-    scroll_up_button = pygame.Rect(WIDTH - 50, 80, scroll_button_width, scroll_button_height)
-    scroll_down_button = pygame.Rect(WIDTH - 50, HEIGHT - 80, scroll_button_width, scroll_button_height)
+    scroll_button_size = int(HEIGHT * 0.05)  # 5% de la hauteur
+    scroll_up_button = pygame.Rect(WIDTH - WIDTH * 0.1, HEIGHT * 0.15, scroll_button_size, scroll_button_size)
+    scroll_down_button = pygame.Rect(WIDTH - WIDTH * 0.1, HEIGHT - HEIGHT * 0.15, scroll_button_size, scroll_button_size)
     
     # Génération d'une grille d'emplacements pour les quadrants avec défilement
     def generate_grid(scroll_position):
-        thumbnail_size = 150
-        padding = 20
-        columns = max(1, (WIDTH - padding - 60) // (thumbnail_size + padding))  # Réduit pour laisser de la place aux boutons de défilement
+        thumbnail_size = min(WIDTH * 0.18, HEIGHT * 0.25)  # Taille adaptative 
+        padding = int(WIDTH * 0.02)  # 2% de la largeur
+        columns = max(1, (WIDTH - padding * 2 - WIDTH * 0.1) // (thumbnail_size + padding))
         
         grid_rects = {}
         col, row = 0, 0
         
         for quadrant_id in quadrants:
             x = padding + col * (thumbnail_size + padding)
-            y = padding + row * (thumbnail_size + padding) + 60 - scroll_position  # Ajustement pour le défilement
+            y = padding + row * (thumbnail_size + padding) + HEIGHT * 0.1 - scroll_position
             
             rect = pygame.Rect(x, y, thumbnail_size, thumbnail_size)
             grid_rects[quadrant_id] = rect
@@ -90,7 +89,7 @@ def show_quadrant_library(screen):
         # Calculer la hauteur totale du contenu
         if len(quadrants) > 0:
             num_rows = (len(quadrants) + columns - 1) // columns
-            total_height = num_rows * (thumbnail_size + padding) + padding + 60
+            total_height = num_rows * (thumbnail_size + padding) + padding + HEIGHT * 0.1
             return grid_rects, total_height
         else:
             return grid_rects, 0
@@ -107,20 +106,20 @@ def show_quadrant_library(screen):
         
         # Calculer la grille en tenant compte du défilement
         quadrant_rects, total_content_height = generate_grid(scroll_y)
-        max_scroll = max(0, total_content_height - (HEIGHT - 100))  # Ajuster pour laisser de la place en haut et en bas
+        max_scroll = max(0, total_content_height - (HEIGHT - HEIGHT * 0.2))  # Espace en haut et en bas
         
         # Mode bibliothèque - affichage de tous les quadrants en grille
         if view_mode == "library":
             # Titre discret
             title = title_font.render("Bibliothèque de Quadrants", True, BLACK)
-            screen.blit(title, (WIDTH//2 - title.get_width()//2, 20))
+            screen.blit(title, (WIDTH//2 - title.get_width()//2, HEIGHT * 0.05))
             
             if not quadrants:
                 no_quadrants = title_font.render("Aucun quadrant disponible", True, DARK_GRAY)
                 screen.blit(no_quadrants, (WIDTH//2 - no_quadrants.get_width()//2, HEIGHT//2))
             else:
                 # Zone de clipping pour la bibliothèque
-                library_area = pygame.Rect(0, 60, WIDTH, HEIGHT - 120)
+                library_area = pygame.Rect(0, HEIGHT * 0.1, WIDTH, HEIGHT - HEIGHT * 0.2)
                 
                 # Créer une surface pour dessiner les quadrants
                 library_surface = pygame.Surface((WIDTH, total_content_height), pygame.SRCALPHA)
@@ -129,7 +128,7 @@ def show_quadrant_library(screen):
                 # Affichage des miniatures en grille
                 for quadrant_id, rect in quadrant_rects.items():
                     # Calculer la position relative à la surface de la bibliothèque
-                    rel_rect = pygame.Rect(rect.x, rect.y + scroll_y - 60, rect.width, rect.height)
+                    rel_rect = pygame.Rect(rect.x, rect.y + scroll_y - HEIGHT * 0.1, rect.width, rect.height)
                     
                     # Fond gris clair pour chaque emplacement
                     pygame.draw.rect(library_surface, LIGHT_GRAY, rel_rect)
@@ -146,13 +145,13 @@ def show_quadrant_library(screen):
                         
                         # Petit numéro discret en bas à droite
                         q_num = quadrant_id.split('_')[1]
-                        num_font = pygame.font.Font(None, 20)
+                        num_font = pygame.font.Font(None, int(HEIGHT * 0.03))  # Taille adaptative
                         num_text = num_font.render(q_num, True, BLACK)
                         library_surface.blit(num_text, (rel_rect.right - num_text.get_width() - 5, 
                                                       rel_rect.bottom - num_text.get_height() - 5))
                 
                 # Afficher la surface de la bibliothèque avec clipping
-                screen.blit(library_surface, (0, 60), area=pygame.Rect(0, scroll_y, WIDTH, library_area.height))
+                screen.blit(library_surface, (0, HEIGHT * 0.1), area=pygame.Rect(0, scroll_y, WIDTH, library_area.height))
                 
                 # Dessiner les boutons de défilement
                 if max_scroll > 0:
@@ -180,8 +179,8 @@ def show_quadrant_library(screen):
                 img_width, img_height = img.get_size()
                 
                 # Calculer la taille adaptée à l'écran
-                display_area_width = WIDTH - 80
-                display_area_height = HEIGHT - 100
+                display_area_width = WIDTH * 0.8  # 80% de la largeur
+                display_area_height = HEIGHT * 0.7  # 70% de la hauteur
                 
                 # Calculer le ratio pour conserver les proportions
                 width_ratio = display_area_width / img_width
@@ -204,15 +203,15 @@ def show_quadrant_library(screen):
                 pygame.draw.rect(screen, DARK_GRAY, (img_x, img_y, new_width, new_height), 2)
             
             # Dessiner un bouton retour discret (flèche)
-            detail_back_button = pygame.Rect(20, 20, 40, 40)
-            pygame.draw.circle(screen, LIGHT_GRAY, detail_back_button.center, 20)
-            pygame.draw.circle(screen, DARK_GRAY, detail_back_button.center, 20, 2)
+            detail_back_button = pygame.Rect(WIDTH * 0.05, HEIGHT * 0.05, int(HEIGHT * 0.08), int(HEIGHT * 0.08))
+            pygame.draw.circle(screen, LIGHT_GRAY, detail_back_button.center, detail_back_button.width // 2)
+            pygame.draw.circle(screen, DARK_GRAY, detail_back_button.center, detail_back_button.width // 2, 2)
             
             # Dessiner une flèche vers la gauche
             arrow_points = [
-                (detail_back_button.centerx - 5, detail_back_button.centery),
-                (detail_back_button.centerx + 5, detail_back_button.centery - 10),
-                (detail_back_button.centerx + 5, detail_back_button.centery + 10)
+                (detail_back_button.centerx - detail_back_button.width // 4, detail_back_button.centery),
+                (detail_back_button.centerx + detail_back_button.width // 4, detail_back_button.centery - detail_back_button.height // 4),
+                (detail_back_button.centerx + detail_back_button.width // 4, detail_back_button.centery + detail_back_button.height // 4)
             ]
             pygame.draw.polygon(screen, DARK_GRAY, arrow_points)
         
@@ -242,7 +241,14 @@ def show_quadrant_library(screen):
                         
                         # Vérifier si un quadrant a été cliqué
                         for quadrant_id, rect in quadrant_rects.items():
-                            if rect.collidepoint(event.pos) and rect.top >= 60 and rect.bottom <= HEIGHT - 60:
+                            # Limiter la zone de clic à la hauteur visible
+                            visible_top = HEIGHT * 0.1
+                            visible_bottom = HEIGHT - HEIGHT * 0.1
+                            
+                            if (rect.collidepoint(event.pos) and 
+                                rect.top >= visible_top - rect.height and 
+                                rect.bottom <= visible_bottom + rect.height):
+                                
                                 selected_quadrant = quadrant_id
                                 view_mode = "detail"
                                 break
@@ -264,12 +270,9 @@ def show_quadrant_library(screen):
                             view_mode = "library"
             
         pygame.display.flip()
-    
-    # Restaurer la taille d'écran originale avant de quitter
-    pygame.display.set_mode(original_size)
 
 if __name__ == "__main__":
     pygame.init()
-    screen = pygame.display.set_mode((675, 500))
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)  # Démarrer en plein écran
     show_quadrant_library(screen)
     pygame.quit()

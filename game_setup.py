@@ -2,17 +2,15 @@ import pygame
 import json
 import os
 import sys
-import numpy as np
 from quadrant_viewer import load_quadrants
-from config_manager import initialize_quadrants
 
 def show_game_setup(screen):
-    """Interface pour configurer une partie en sélectionnant 4 quadrants"""
-    # Sauvegarder la taille originale
-    original_size = screen.get_size()
+    """
+    Interface pour configurer une partie en sélectionnant 4 quadrants
+    """
     
     # Configuration
-    WIDTH, HEIGHT = 800, 600
+    WIDTH, HEIGHT = screen.get_width(), screen.get_height()
     pygame.display.set_caption("Configuration de partie")
     
     # Couleurs
@@ -22,28 +20,35 @@ def show_game_setup(screen):
     DARK_GRAY = (100, 100, 100)
     GREEN = (50, 180, 50)
     BLUE = (50, 100, 200)
-    HIGHLIGHT = (255, 220, 120)  # Couleur de surbrillance pour l'espace de dépôt
+    HIGHLIGHT = (255, 220, 120)
     
     # Polices
     title_font = pygame.font.Font(None, 36)
     button_font = pygame.font.Font(None, 30)
+    instruction_font = pygame.font.Font(None, 16)
     
     # Fonction pour faire tourner une grille dans le sens horaire
-    def rotate_grid_90(grid):
+    def rotate_grid(grid):
         """Tourne une grille 4x4 de 90 degrés dans le sens horaire"""
-        # Convertir en tableau numpy pour faciliter la rotation
-        np_grid = np.array(grid)
-        # Rotation de 90° dans le sens horaire
-        return np.rot90(np_grid, k=1, axes=(1, 0)).tolist()
+        rows = len(grid)
+        cols = len(grid[0])
+        rotated = [[0 for i in range(rows)] for j in range(cols)]
+        
+        for i in range(rows):
+            for j in range(cols):
+                rotated[j][rows - 1 - i] = grid[i][j]
+        
+        return rotated
     
-    # Fonction pour appliquer les rotations aux données de grille
     def apply_rotation_to_grid(grid, rotation):
-        """Applique la rotation spécifiée (0, 90, 180, 270) à une grille"""
-        rotated_grid = grid.copy()
+        """
+        Applique la rotation spécifiée (0, 90, 180, 270) à une grille
+        """
+        rotated_grid = [row.copy() for row in grid]  # Copie de la grille originale
         # Nombre de rotations de 90° à appliquer
         num_rotations = rotation // 90
-        for _ in range(num_rotations):
-            rotated_grid = rotate_grid_90(rotated_grid)
+        for i in range(num_rotations):
+            rotated_grid = rotate_grid(rotated_grid)
         return rotated_grid
     
     def prepare_rotated_grids(quadrants_data):
@@ -58,11 +63,9 @@ def show_game_setup(screen):
         for quadrant_id, data in quadrants_data.items():
             # Vérifier si les orientations sont déjà préparées
             if "rotations" not in data:
-                print(f"Préparation des orientations pour le quadrant {quadrant_id}...")
-                
                 # S'assurer que nous avons une grille originale
                 if "original_grid" not in data:
-                    data["original_grid"] = data["grid"].copy()
+                    data["original_grid"] = [row.copy() for row in data["grid"]]
                 
                 # Créer les rotations possibles
                 rotations = {}
@@ -78,35 +81,43 @@ def show_game_setup(screen):
         if need_save:
             with open(json_path, "w") as f:
                 json.dump(quadrants_data, f, indent=4)
-            print("Orientations sauvegardées dans le fichier JSON")
-    
-    # Chargement des quadrants et préparation des grilles pivotées
+                
     quadrants = load_quadrants()
     
-    # Ajout des orientations pour chaque quadrant (si pas déjà fait)
+    # Ajout des orientations pour chaque quadrant
     prepare_rotated_grids(quadrants)
     
-    # Préchargement des images
+    # Charger les images des quadrants
     quadrant_images = {}
     for quadrant_id, data in quadrants.items():
         image_path = data.get("image_path")
         if image_path and os.path.exists(image_path):
-            try:
-                img = pygame.image.load(image_path)
-                quadrant_images[quadrant_id] = img
-            except pygame.error:
-                print(f"Erreur lors du chargement de l'image pour {quadrant_id}")
+            img = pygame.image.load(image_path)
+            quadrant_images[quadrant_id] = img
     
-    # Définition des zones
-    board_area = pygame.Rect(30, 70, 400, 400)  # Carré pour placer les 4 quadrants
-    library_area = pygame.Rect(460, 70, 310, 400)  # Zone de bibliothèque
+    # Calculer les dimensions pour le centrage de la zone du plateau et de la bibliothèque
+    board_size = 400  # taille du plateau (carré)
+    library_width = 310
+    spacing = 30  # espacement entre les zones
+    
+    total_width = board_size + spacing + library_width
+    total_height = board_size + 140  # hauteur du plateau + espace pour les boutons/titres
+    
+    # Positions centrées sur l'écran
+    start_x = (WIDTH - total_width) // 2
+    start_y = (HEIGHT - total_height) // 2 + 20  # un peu plus bas pour laisser de la place au titre
+    
+    # Définition des zones centrées
+    board_area = pygame.Rect(start_x, start_y + 50, board_size, board_size)
+    library_area = pygame.Rect(start_x + board_size + spacing, start_y + 50, library_width, board_size)
     
     # Position des emplacements des quadrants sur le plateau
+    slot_size = board_size // 2
     quadrant_slots = [
-        pygame.Rect(board_area.left, board_area.top, 200, 200),  # Haut gauche
-        pygame.Rect(board_area.left + 200, board_area.top, 200, 200),  # Haut droite
-        pygame.Rect(board_area.left, board_area.top + 200, 200, 200),  # Bas gauche
-        pygame.Rect(board_area.left + 200, board_area.top + 200, 200, 200)  # Bas droite
+        pygame.Rect(board_area.left, board_area.top, slot_size, slot_size),                             # Haut gauche
+        pygame.Rect(board_area.left + slot_size, board_area.top, slot_size, slot_size),                 # Haut droite
+        pygame.Rect(board_area.left, board_area.top + slot_size, slot_size, slot_size),                 # Bas gauche
+        pygame.Rect(board_area.left + slot_size, board_area.top + slot_size, slot_size, slot_size)      # Bas droite
     ]
     
     # Quadrants sélectionnés (None = vide)
@@ -115,15 +126,23 @@ def show_game_setup(screen):
     # Rotation des quadrants sélectionnés (0, 90, 180, 270 degrés)
     quadrant_rotations = [0, 0, 0, 0]
     
-    # Bouton commencer
-    start_button = pygame.Rect(WIDTH//2 - 100, HEIGHT - 70, 200, 50)
+    # Position des boutons en bas (centrés)
+    buttons_y = board_area.bottom + 20
     
-    # Bouton retour
-    back_button = pygame.Rect(30, HEIGHT - 70, 120, 50)
+    # Bouton commencer (centré)
+    start_button_width = 200
+    start_button_height = 50
+    start_button = pygame.Rect(WIDTH//2 - start_button_width//2, buttons_y, start_button_width, start_button_height)
     
-    # Boutons de défilement
-    scroll_up_button = pygame.Rect(library_area.right - 30, library_area.top, 30, 30)
-    scroll_down_button = pygame.Rect(library_area.right - 30, library_area.bottom - 30, 30, 30)
+    # Bouton retour (à gauche)
+    back_button_width = 120
+    back_button_height = 50
+    back_button = pygame.Rect(start_x, buttons_y, back_button_width, back_button_height)
+    
+    # Boutons de défilement pour la bibliothèque
+    scroll_button_size = 30
+    scroll_up_button = pygame.Rect(library_area.right - scroll_button_size - 5, library_area.top + 5, scroll_button_size, scroll_button_size)
+    scroll_down_button = pygame.Rect(library_area.right - scroll_button_size - 5, library_area.bottom - scroll_button_size - 5, scroll_button_size, scroll_button_size)
     
     # Position de défilement de la bibliothèque
     scroll_y = 0
@@ -225,7 +244,7 @@ def show_game_setup(screen):
         
         return []
     
-    def start_game(selected_quadrants, rotations):
+    def start_game_with_quadrants(selected_quadrants, rotations):
         """Démarre le jeu avec les quadrants sélectionnés et leurs rotations"""
         # Vérifier que les 4 quadrants sont sélectionnés
         if None in selected_quadrants:
@@ -248,46 +267,53 @@ def show_game_setup(screen):
         return True
     
     # Fonction pour afficher un message temporaire
-    def show_debug_message(message, duration=1000):
+    def show_message(message, duration=1000, color=(255, 0, 0)):
         font = pygame.font.Font(None, 36)
-        text_surface = font.render(message, True, (255, 0, 0))
+        text_surface = font.render(message, True, color)
+        
+        # Centrer le message sur l'écran
         text_rect = text_surface.get_rect(center=(WIDTH//2, HEIGHT//2))
         
-        background = screen.subsurface(text_rect).copy()
+        # Créer un fond semi-transparent
+        background = pygame.Surface((text_rect.width + 20, text_rect.height + 20), pygame.SRCALPHA)
+        background.fill((0, 0, 0, 128))  # Fond noir semi-transparent
+        background_rect = background.get_rect(center=text_rect.center)
+        
+        # Dessiner le fond et le texte
+        screen.blit(background, background_rect)
         screen.blit(text_surface, text_rect)
         pygame.display.flip()
         
         pygame.time.delay(duration)
-        screen.blit(background, text_rect)
-        pygame.display.flip()
     
     # Boucle principale
     running = True
-    game_started = False
     
     while running:
         screen.fill(WHITE)
         
-        # Titre
+        # Titre centré
         title = title_font.render("Configuration de partie", True, BLACK)
-        screen.blit(title, (WIDTH//2 - title.get_width()//2, 20))
+        title_rect = title.get_rect(center=(WIDTH//2, start_y))
+        screen.blit(title, title_rect)
         
-        # Zone du plateau
+        # Zone du plateau avec bordure
         pygame.draw.rect(screen, WHITE, board_area)
         pygame.draw.rect(screen, BLACK, board_area, 2)
         
-        # Instructions pour le joueur
-        instruction_font = pygame.font.Font(None, 16)
-        instruction_text = instruction_font.render("Clic droit pour retirer un quadrant", True, DARK_GRAY)
-        screen.blit(instruction_text, (board_area.left, board_area.bottom + 5))
+        # Instructions pour le joueur (centrées sous le plateau)
+        instruction_text = instruction_font.render("Double-clic pour tourner • Clic droit pour retirer", True, DARK_GRAY)
+        instruction_rect = instruction_text.get_rect(center=(board_area.centerx, board_area.bottom + 10))
+        screen.blit(instruction_text, instruction_rect)
         
-        # Zone de la bibliothèque
+        # Zone de la bibliothèque avec bordure
         pygame.draw.rect(screen, WHITE, library_area)
         pygame.draw.rect(screen, BLACK, library_area, 2)
         
-        # Titre de la bibliothèque
+        # Titre de la bibliothèque (centré)
         lib_title = button_font.render("Bibliothèque", True, BLACK)
-        screen.blit(lib_title, (library_area.centerx - lib_title.get_width()//2, library_area.top - 30))
+        lib_rect = lib_title.get_rect(center=(library_area.centerx, library_area.top - 20))
+        screen.blit(lib_title, lib_rect)
         
         # Déterminer le slot survolé
         hovered_slot = -1
@@ -304,7 +330,8 @@ def show_game_setup(screen):
             
             # Numéro de slot
             slot_num = button_font.render(str(i+1), True, BLACK)
-            screen.blit(slot_num, (slot.left + 5, slot.top + 5))
+            slot_num_rect = slot_num.get_rect(topleft=(slot.left + 5, slot.top + 5))
+            screen.blit(slot_num, slot_num_rect)
         
         # Dessiner la bibliothèque
         lib_rects, total_content_height = generate_library_rects()
@@ -382,12 +409,14 @@ def show_game_setup(screen):
         all_selected = None not in selected_quadrants
         pygame.draw.rect(screen, GREEN if all_selected else DARK_GRAY, start_button)
         start_text = button_font.render("Commencer", True, WHITE)
-        screen.blit(start_text, (start_button.centerx - start_text.get_width()//2, start_button.centery - start_text.get_height()//2))
+        start_text_rect = start_text.get_rect(center=start_button.center)
+        screen.blit(start_text, start_text_rect)
         
         # Bouton retour
         pygame.draw.rect(screen, BLUE, back_button)
         back_text = button_font.render("Retour", True, WHITE)
-        screen.blit(back_text, (back_button.centerx - back_text.get_width()//2, back_button.centery - back_text.get_height()//2))
+        back_text_rect = back_text.get_rect(center=back_button.center)
+        screen.blit(back_text, back_text_rect)
         
         # Traitement des événements
         for event in pygame.event.get():
@@ -400,7 +429,7 @@ def show_game_setup(screen):
                     for i, slot in enumerate(quadrant_slots):
                         if slot.collidepoint(event.pos) and selected_quadrants[i] is not None:
                             selected_quadrants[i] = None
-                            show_debug_message("Quadrant retiré", 300)
+                            quadrant_rotations[i] = 0
                             break
                 
                 # Clic gauche pour les interactions standard
@@ -411,9 +440,9 @@ def show_game_setup(screen):
                     
                     # Clic sur le bouton commencer
                     if start_button.collidepoint(event.pos) and all_selected:
-                        game_started = start_game(selected_quadrants, quadrant_rotations)
-                        if game_started:
-                            quadrants = load_quadrants()
+                        start_game_with_quadrants(selected_quadrants, quadrant_rotations)
+                        # Recharger les quadrants après le jeu
+                        quadrants = load_quadrants()
                     
                     # Clic sur les boutons de défilement
                     if scroll_up_button.collidepoint(event.pos):
@@ -430,7 +459,6 @@ def show_game_setup(screen):
                                 if selected_quadrants[i]:
                                     # Faire pivoter le quadrant à 90 degrés
                                     quadrant_rotations[i] = (quadrant_rotations[i] + 90) % 360
-                                    show_debug_message(f"Rotation: {quadrant_rotations[i]}°", 500)
                                 break
                             
                             # Enregistrer pour la détection du prochain double-clic
@@ -442,6 +470,7 @@ def show_game_setup(screen):
                                                            (current_time - last_click_time) < double_click_time):
                                 dragged_quadrant = selected_quadrants[i]
                                 selected_quadrants[i] = None
+                                quadrant_rotations[i] = 0
                                 drag_offset_x = event.pos[0] - slot.centerx
                                 drag_offset_y = event.pos[1] - slot.centery
                             break

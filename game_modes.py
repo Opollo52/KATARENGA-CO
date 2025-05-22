@@ -1,32 +1,25 @@
 import pygame
 
-# Variables globales pour mémoriser les choix de l'utilisateur
-# Initialisation par défaut: Katarenga contre Ordi
-GLOBAL_SELECTED_GAME = 0  # Index du jeu sélectionné (0: Katarenga, 1: Congress, 2: Isolation)
-GLOBAL_SELECTED_OPPONENT = 0  # Index de l'adversaire sélectionné (0: Ordi, 1: Local, 2: En ligne)
-FIRST_RUN = True  # Indique si c'est le premier lancement
+# Variables globales pour garder le mode de jeu et l'adversaire
+GLOBAL_SELECTED_GAME = 0 
+GLOBAL_SELECTED_OPPONENT = 0
+FIRST_RUN = True
 
 def show_game_modes(screen):
     """
     Affiche la fenêtre de sélection des modes de jeu.
-    Une ligne pour les types de jeu (Katarenga, Congress, Isolation)
-    Une ligne pour les adversaires (Ordi, Local, En ligne)
-    Fenêtre de 800x600 pixels (agrandie)
     """
     global GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT, FIRST_RUN
     
-    # Sauvegarder la taille originale
-    original_size = screen.get_size()
-    
-    # Créer une nouvelle surface agrandie de 800x600 pixels (au lieu de 600x600)
-    WIDTH, HEIGHT = 800, 600
+    # Utiliser les dimensions actuelles de l'écran pour un meilleur centrage
+    WIDTH, HEIGHT = screen.get_width(), screen.get_height()
     pygame.display.set_caption("Sélection du mode de jeu")
     
     WHITE = (255, 255, 255)
-    BLUE = (50, 100, 200)  # Couleur par défaut des boutons
-    RED = (255, 50, 50)    # Couleur des boutons sélectionnés
+    BLUE = (50, 100, 200)  
+    RED = (255, 50, 50)  
     BLACK = (0, 0, 0)
-    GREEN = (50, 180, 50)  # Couleur pour le bouton Jouer
+    GREEN = (50, 180, 50)
     font = pygame.font.Font(None, 36)
     title_font = pygame.font.Font(None, 42)
     
@@ -42,23 +35,65 @@ def show_game_modes(screen):
     selected_opponent = GLOBAL_SELECTED_OPPONENT
     
     # Configuration des boutons - Réduction de la taille
-    button_width = 130  # Réduit de 150 à 130
-    button_height = 50  # Réduit de 60 à 50
-    horizontal_spacing = 40  # Augmenté pour conserver l'espacement visuel
-    vertical_spacing = 90  # Ajusté pour la nouvelle disposition
+    button_width = 130
+    button_height = 50
+    horizontal_spacing = 40
+    vertical_spacing = 90
     
     # Calcul de la largeur totale des boutons et espaces
     total_width = (button_width * 3) + (horizontal_spacing * 2)
     
-    # Position de départ pour centrer la grille - Boutons plus haut
-    start_x = (screen_rect.width - total_width) // 2
-    start_y = 160  # Remonté pour laisser plus de place en bas
+    # Calcul de la hauteur totale incluant tous les éléments
+    play_button_height = 60
+    title_height = 40
+    info_text_height = 40
+    selection_text_height = 30
+    spacing_between_sections = 20
+    
+    total_height = (
+        title_height + spacing_between_sections +  # Titre de la section jeu
+        button_height + vertical_spacing +         # Boutons de jeu + espace
+        title_height + spacing_between_sections +  # Titre de la section adversaire
+        button_height + spacing_between_sections + # Boutons d'adversaire + espace
+        selection_text_height + spacing_between_sections + # Texte de sélection
+        play_button_height                         # Boutons jouer/retour
+    )
+    
+    # Position de départ pour centrer verticalement tout le contenu
+    start_y = (HEIGHT - total_height) // 2
+    current_y = start_y
+    
+    # Position de départ pour centrer horizontalement les grilles de boutons
+    start_x = (WIDTH - total_width) // 2
+    
+    # Position pour les titres des sections (centrage)
+    game_title_y = current_y
+    current_y += title_height + spacing_between_sections
+    
+    # Position pour les boutons de type de jeu
+    game_buttons_y = current_y
+    current_y += button_height + vertical_spacing
+    
+    # Position pour le titre de la section adversaire
+    opponent_title_y = current_y
+    current_y += title_height + spacing_between_sections
+    
+    # Position pour les boutons d'adversaire
+    opponent_buttons_y = current_y
+    current_y += button_height + spacing_between_sections
+    
+    # Position pour le texte de sélection actuelle
+    selection_text_y = current_y
+    current_y += selection_text_height + spacing_between_sections
+    
+    # Position pour les boutons Jouer et Retour
+    button_row_y = current_y
     
     # Création des boutons de type de jeu (première ligne)
     game_buttons = []
     for col in range(3):
         x = start_x + col * (button_width + horizontal_spacing)
-        y = start_y
+        y = game_buttons_y
         rect = pygame.Rect(x, y, button_width, button_height)
         game_buttons.append(rect)
     
@@ -66,28 +101,28 @@ def show_game_modes(screen):
     opponent_buttons = []
     for col in range(3):
         x = start_x + col * (button_width + horizontal_spacing)
-        y = start_y + button_height + vertical_spacing
+        y = opponent_buttons_y
         rect = pygame.Rect(x, y, button_width, button_height)
         opponent_buttons.append(rect)
     
-    # Bouton Jouer et Retour sur la même ligne
-    button_row_y = start_y + (button_height + vertical_spacing) * 2 + 20  # Ajout d'un peu plus d'espace
-    
-    # Bouton Jouer - Repositionné à gauche
+    # Bouton Jouer et Retour sur la même ligne - centrage horizontal
     play_button_width = 180
     play_button_height = 60
+    back_button_width = 180
+    back_button_height = 60
+    
+    buttons_total_width = play_button_width + 40 + back_button_width  # 40px d'espacement entre les boutons
+    buttons_start_x = (WIDTH - buttons_total_width) // 2
+    
     play_button = pygame.Rect(
-        (screen_rect.width // 2) - play_button_width - 20,  # Décalé à gauche
+        buttons_start_x,
         button_row_y,
         play_button_width, 
         play_button_height
     )
     
-    # Bouton Retour - Repositionné à droite
-    back_button_width = 180
-    back_button_height = 60
     back_button = pygame.Rect(
-        (screen_rect.width // 2) + 20,  # Décalé à droite
+        buttons_start_x + play_button_width + 40,
         button_row_y,
         back_button_width, 
         back_button_height
@@ -98,9 +133,9 @@ def show_game_modes(screen):
         text_rect = text_surf.get_rect(center=rect.center)
         screen.blit(text_surf, text_rect)
     
-    def draw_section_title(text, x, y):
+    def draw_section_title(text, y):
         title_surf = title_font.render(text, True, BLACK)
-        title_rect = title_surf.get_rect(center=(x, y))
+        title_rect = title_surf.get_rect(center=(WIDTH // 2, y))
         screen.blit(title_surf, title_rect)
     
     running = True
@@ -108,8 +143,8 @@ def show_game_modes(screen):
         screen.fill(WHITE)
         
         # Afficher les titres des sections
-        draw_section_title("Choisissez votre jeu", screen_rect.width // 2, start_y - 40)
-        draw_section_title("Choisissez votre adversaire", screen_rect.width // 2, start_y + button_height + vertical_spacing - 40)
+        draw_section_title("Choisissez votre jeu", game_title_y)
+        draw_section_title("Choisissez votre adversaire", opponent_title_y)
         
         # Dessiner les boutons de type de jeu avec le bouton sélectionné en rouge
         for i, rect in enumerate(game_buttons):
@@ -135,13 +170,13 @@ def show_game_modes(screen):
         if FIRST_RUN:
             first_run_text = "Mode par défaut sélectionné"
             info_text = font.render(first_run_text, True, BLACK)
-            info_rect = info_text.get_rect(center=(screen_rect.width // 2, 80))
+            info_rect = info_text.get_rect(center=(WIDTH // 2, start_y - 30))
             screen.blit(info_text, info_rect)
         
         # Afficher la sélection actuelle
         current_selection = f"Mode actuel : {game_types[selected_game]} - {opponent_types[selected_opponent]}"
         selection_text = font.render(current_selection, True, BLACK)
-        selection_rect = selection_text.get_rect(center=(screen_rect.width // 2, play_button.top - 30))
+        selection_rect = selection_text.get_rect(center=(WIDTH // 2, selection_text_y))
         screen.blit(selection_text, selection_rect)
         
         # Gestion des événements
@@ -177,4 +212,4 @@ def show_game_modes(screen):
                     print(f"Mode sélectionné: {game_types[selected_game]} - {opponent_types[selected_opponent]}")
                     running = False
         
-        pygame.display.flip() 
+        pygame.display.flip()
