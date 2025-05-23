@@ -25,8 +25,7 @@ def show_quadrant_library(screen):
     BLACK = (0, 0, 0)
     LIGHT_GRAY = (240, 240, 240)
     DARK_GRAY = (100, 100, 100)
-    BLUE = (50, 100, 200)  # Couleur pour le bouton Retour (comme dans game_modes)
-    
+    RED = (255, 105, 97)
     # Polices - tailles adaptatives
     title_font = pygame.font.Font(None, int(HEIGHT * 0.06))  # 6% de la hauteur
     button_font = pygame.font.Font(None, int(HEIGHT * 0.04))  # 4% de la hauteur
@@ -218,8 +217,8 @@ def show_quadrant_library(screen):
             pygame.draw.polygon(screen, DARK_GRAY, arrow_points)
         
         # Bouton retour (harmonisé avec les autres)
-        pygame.draw.rect(screen, BLUE, back_button)
-        draw_centered_text("Retour", back_button, WHITE)
+        pygame.draw.rect(screen, RED, back_button)
+        draw_centered_text("Retour", back_button, BLACK)
         
         # Traitement des événements
         for event in pygame.event.get():
