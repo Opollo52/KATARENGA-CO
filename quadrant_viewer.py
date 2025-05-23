@@ -1,6 +1,7 @@
 # quadrant_viewer.py modifié
 import pygame
 import os
+import sys
 from config_manager import initialize_quadrants
 
 def load_quadrants():
@@ -18,6 +19,8 @@ def show_quadrant_library(screen):
     pygame.display.set_caption("Bibliothèque de Quadrants")
     
     # Couleurs
+    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
     LIGHT_GRAY = (240, 240, 240)
@@ -100,7 +103,8 @@ def show_quadrant_library(screen):
     
     running = True
     while running:
-        screen.fill(WHITE)
+        background_scaled = pygame.transform.scale(background_image, screen.get_size())
+        screen.blit(background_scaled, (0, 0))
         
         # Calculer la grille en tenant compte du défilement
         quadrant_rects, total_content_height = generate_grid(scroll_y)

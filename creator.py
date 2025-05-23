@@ -51,6 +51,15 @@ def show_creator(screen):
     # Créer le dossier de sauvegarde s'il n'existe pas
     os.makedirs(SAVE_DIR, exist_ok=True)
 
+    # Chargement de l'image de fond
+    background_image = None
+    background_path = os.path.join(SCRIPT_DIR, "img/fond.png")
+    if os.path.exists(background_path):
+        background_image = pygame.image.load(background_path)
+        background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+    else:
+        print("Image de fond fond.png introuvable, fond blanc utilisé.")
+
     # Chargement des images (si elles existent)
     images = {}
     for color, data in COLOR_DATA.items():
@@ -325,7 +334,11 @@ def show_creator(screen):
     # Boucle principale
     running = True
     while running:
-        screen.fill((255, 255, 255))
+        # Afficher l'image de fond ou un fond blanc
+        if background_image:
+            screen.blit(background_image, (0, 0))
+        else:
+            screen.fill((255, 255, 255))
         
         # Dessiner le titre
         draw_title(screen)

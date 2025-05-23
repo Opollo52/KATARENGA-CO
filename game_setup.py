@@ -14,12 +14,14 @@ def show_game_setup(screen):
     pygame.display.set_caption("Configuration de partie")
     
     # Couleurs
+    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
     LIGHT_GRAY = (240, 240, 240)
     DARK_GRAY = (100, 100, 100)
-    GREEN = (50, 180, 50)
-    BLUE = (50, 100, 200)
+    BLUE = (169, 203, 215)   
+    RED = (255, 105, 97)      
     HIGHLIGHT = (255, 220, 120)
     
     # Polices
@@ -290,7 +292,8 @@ def show_game_setup(screen):
     running = True
     
     while running:
-        screen.fill(WHITE)
+        background_scaled = pygame.transform.scale(background_image, screen.get_size())
+        screen.blit(background_scaled, (0, 0))
         
         # Titre centré
         title = title_font.render("Configuration de partie", True, BLACK)
@@ -302,8 +305,9 @@ def show_game_setup(screen):
         pygame.draw.rect(screen, BLACK, board_area, 2)
         
         # Instructions pour le joueur (centrées sous le plateau)
-        instruction_text = instruction_font.render("Double-clic pour tourner • Clic droit pour retirer", True, DARK_GRAY)
+        instruction_text = instruction_font.render("Double-clic pour tourner • Clic droit pour retirer", True, BLACK)
         instruction_rect = instruction_text.get_rect(center=(board_area.centerx, board_area.bottom + 10))
+        pygame.draw.rect(screen, (255, 255, 255), instruction_rect.inflate(8, 4))
         screen.blit(instruction_text, instruction_rect)
         
         # Zone de la bibliothèque avec bordure
@@ -312,7 +316,11 @@ def show_game_setup(screen):
         
         # Titre de la bibliothèque (centré)
         lib_title = button_font.render("Bibliothèque", True, BLACK)
-        lib_rect = lib_title.get_rect(center=(library_area.centerx, library_area.top - 20))
+        lib_rect = lib_title.get_rect(center=(library_area.centerx, library_area.bottom + 20))
+        lib_bg_rect = lib_rect.inflate(16, 8)
+        lib_bg_surface = pygame.Surface((lib_bg_rect.width, lib_bg_rect.height), pygame.SRCALPHA)
+        lib_bg_surface.fill((255, 255, 255))
+        screen.blit(lib_bg_surface, lib_bg_rect)
         screen.blit(lib_title, lib_rect)
         
         # Déterminer le slot survolé
@@ -407,14 +415,14 @@ def show_game_setup(screen):
         
         # Dessiner le bouton Commencer
         all_selected = None not in selected_quadrants
-        pygame.draw.rect(screen, GREEN if all_selected else DARK_GRAY, start_button)
-        start_text = button_font.render("Commencer", True, WHITE)
+        pygame.draw.rect(screen, BLUE if all_selected else DARK_GRAY, start_button)
+        start_text = button_font.render("Commencer", True, BLACK)
         start_text_rect = start_text.get_rect(center=start_button.center)
         screen.blit(start_text, start_text_rect)
         
         # Bouton retour
-        pygame.draw.rect(screen, BLUE, back_button)
-        back_text = button_font.render("Retour", True, WHITE)
+        pygame.draw.rect(screen, RED, back_button)
+        back_text = button_font.render("Retour", True, BLACK)
         back_text_rect = back_text.get_rect(center=back_button.center)
         screen.blit(back_text, back_text_rect)
         

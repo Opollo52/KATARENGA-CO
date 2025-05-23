@@ -1,14 +1,19 @@
 import pygame
+import os
+import sys
 
 def show_quadrant(screen):
     # Récupérer les dimensions de l'écran
     WIDTH, HEIGHT = screen.get_width(), screen.get_height()
-    
+    #couleurs
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
     WHITE = (255, 255, 255)
-    BLUE = (50, 100, 200)  # Couleur harmonisée avec game_modes
-    RED = (255, 50, 50)    # Couleur harmonisée avec game_modes
+    BLACK = (0, 0, 0)
+    BLUE = (169, 203, 215)   
+    RED = (255, 105, 97)       
     font = pygame.font.Font(None, 36)
-    title_font = pygame.font.Font(None, 42)  # Police plus grande pour le titre
+    title_font = pygame.font.Font(None, 42)  
 
     # Définition des boutons
     screen_rect = screen.get_rect()
@@ -38,7 +43,8 @@ def show_quadrant(screen):
 
     running = True
     while running:
-        screen.fill(WHITE)
+        background_scaled = pygame.transform.scale(background_image, screen.get_size())
+        screen.blit(background_scaled, (0, 0))
         
         # Titre centré au-dessus des boutons
         title = title_font.render("Menu des Quadrants", True, (0, 0, 0))
@@ -53,7 +59,7 @@ def show_quadrant(screen):
             pygame.draw.rect(screen, tuple(min(c + 30, 255) for c in color), rect, 2)
 
         for i, (text, rect) in enumerate(zip(texts, buttons)):
-            draw_centered_text(text, rect, WHITE)
+            draw_centered_text(text, rect, BLACK)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

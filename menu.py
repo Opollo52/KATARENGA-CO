@@ -1,10 +1,15 @@
 import pygame
+import os
+import sys
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 def run_menu(screen):
     # Définition des couleurs
+    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
     WHITE = (255, 255, 255)
-    BLUE = (50, 100, 200)  # Harmonisé avec game_modes
-    RED = (255, 50, 50)    # Harmonisé avec game_modes
+    BLACK = (0, 0, 0)
+    BLUE = (169, 203, 215)  # 
+    RED = (255, 105, 97)    
     font = pygame.font.Font(None, 36)
 
     # Configuration dynamique des boutons
@@ -30,7 +35,8 @@ def run_menu(screen):
 
     running = True
     while running:
-        screen.fill(WHITE)
+        background_scaled = pygame.transform.scale(background_image, screen.get_size())
+        screen.blit(background_scaled, (0, 0))
         
         # Dessin des boutons avec style harmonisé
         pygame.draw.rect(screen, BLUE, button_start)
@@ -41,8 +47,8 @@ def run_menu(screen):
         pygame.draw.rect(screen, tuple(min(c + 30, 255) for c in RED), button_quit, 2)
         
         # Textes des boutons
-        draw_centered_text("Start", button_start, WHITE)
-        draw_centered_text("Quitter", button_quit, WHITE)
+        draw_centered_text("Start", button_start, BLACK)
+        draw_centered_text("Quitter", button_quit, BLACK)
 
         # Gestion des événements
         for event in pygame.event.get():
@@ -51,7 +57,7 @@ def run_menu(screen):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if button_start.collidepoint(event.pos):
                     # Importer ici pour éviter l'importation circulaire
-                    from settings import show_settings
+                    from hub import show_settings
                     show_settings(screen)
                 if button_quit.collidepoint(event.pos):
                     running = False

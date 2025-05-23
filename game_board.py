@@ -1,9 +1,140 @@
 import pygame
 import os
 import sys
+import time
 from pawn import get_valid_moves, highlight_possible_moves, is_valid_move
 from game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
 from congress import check_victory, highlight_connected_pawns, display_victory_message
+
+# Classe simple pour les animations de pions
+class Animation:
+    def __init__(self):
+        self.moving_pawn = None
+        self.move_start_time = 0
+        self.move_duration = 0.8 
+        self.start_pos = None
+        self.end_pos = None
+        self.moving_pawn_color = None  # Stocker la couleur du pion en mouvement
+        self.pending_move = None  # Stocker le mouvement à exécuter après l'animation
+        
+    def start_move(self, start_row, start_col, end_row, end_col, board_x, board_y, cell_size, pawn_color):
+        """Démarre une animation de déplacement"""
+        self.moving_pawn = (start_row, start_col, end_row, end_col)
+        self.moving_pawn_color = pawn_color  # Sauvegarder la couleur
+        self.move_start_time = time.time()
+        
+        # Positions d'écran
+        self.start_pos = (
+            board_x + start_col * cell_size + cell_size // 2,
+            board_y + start_row * cell_size + cell_size // 2
+        )
+        self.end_pos = (
+            board_x + end_col * cell_size + cell_size // 2,
+            board_y + end_row * cell_size + cell_size // 2
+        )
+    
+    def get_current_pos(self):
+        """Retourne la position actuelle du pion en mouvement"""
+        if not self.moving_pawn:
+            return None
+            
+        elapsed = time.time() - self.move_start_time
+        progress = min(elapsed / self.move_duration, 1.0)
+        
+        # Easing simple (ease-out)
+        progress = 1 - (1 - progress) ** 3
+        
+        current_x = self.start_pos[0] + (self.end_pos[0] - self.start_pos[0]) * progress
+        current_y = self.start_pos[1] + (self.end_pos[1] - self.start_pos[1]) * progress
+        
+        if progress >= 1.0:
+            self.moving_pawn = None
+            self.moving_pawn_color = None  # Réinitialiser la couleur
+            # Marquer que l'animation est terminée mais ne pas réinitialiser pending_move ici
+            
+        return (int(current_x), int(current_y))
+    
+    def is_moving(self):
+        """Vérifie si une animation est en cours"""
+        return self.moving_pawn is not None
+
+    def has_pending_move(self):
+        """Vérifie s'il y a un mouvement en attente à exécuter"""
+        return self.pending_move is not None
+    
+    def execute_pending_move(self, pawn_grid, current_game_mode):
+        """Exécute le mouvement en attente et retourne les infos de victoire"""
+        if not self.pending_move:
+            return None, None, None
+            
+        from_pos = self.pending_move['from']
+        to_pos = self.pending_move['to']
+        
+        # Exécuter le mouvement dans la grille logique
+        pawn_grid[to_pos[0]][to_pos[1]] = pawn_grid[from_pos[0]][from_pos[1]]
+        pawn_grid[from_pos[0]][from_pos[1]] = 0
+        
+        # Vérifier la condition de victoire pour le mode Congress
+        winner = 0
+        connected_pawns = []
+        game_over = False
+        
+        if current_game_mode == 1:  # Si mode Congress
+            winner, connected_pawns = check_victory(pawn_grid)
+            if winner > 0:
+                game_over = True
+        
+        # Nettoyer le mouvement en attente
+        self.pending_move = None
+        
+        return winner, connected_pawns, game_over
+
+def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation):
+    """Dessine les pions avec animations simples"""
+    DARK_RED = (200, 0, 0)
+    DARK_BLUE = (0, 0, 150)
+    BLACK = (0, 0, 0)
+    
+    # Obtenir la position du pion en mouvement
+    moving_pos = animation.get_current_pos()
+    moving_pawn_info = animation.moving_pawn
+    
+    for row in range(8):
+        for col in range(8):
+            if pawn_grid[row][col] > 0:
+                # Skip le pion en mouvement (on le dessine séparément)
+                if (moving_pawn_info and 
+                    moving_pawn_info[0] == row and moving_pawn_info[1] == col):
+                    continue
+                
+                pawn_color = DARK_RED if pawn_grid[row][col] == 1 else DARK_BLUE
+                
+                # Position normale du pion
+                pawn_center = (
+                    board_x + col * cell_size + cell_size // 2,
+                    board_y + row * cell_size + cell_size // 2
+                )
+                
+                # Rayon normal
+                radius = cell_size // 3
+                
+                # Cercle de sélection jaune si pion sélectionné
+                if selected_pawn and selected_pawn == (row, col):
+                    highlight_radius = radius + 4
+                    pygame.draw.circle(screen, (255, 255, 0), pawn_center, highlight_radius, 3)
+                
+                # Dessiner le pion
+                pygame.draw.circle(screen, pawn_color, pawn_center, radius)
+                pygame.draw.circle(screen, BLACK, pawn_center, radius, 2)
+    
+    # Dessiner le pion en mouvement par-dessus tout
+    if moving_pos and moving_pawn_info and animation.moving_pawn_color:
+        # Utiliser la couleur sauvegardée
+        pawn_color = DARK_RED if animation.moving_pawn_color == 1 else DARK_BLUE
+        radius = cell_size // 3
+        
+        pygame.draw.circle(screen, pawn_color, moving_pos, radius)
+        pygame.draw.circle(screen, BLACK, moving_pos, radius, 2)
 
 def create_game_board(quadrant_grid_data):
     """
@@ -85,9 +216,10 @@ def start_game(screen, quadrants_data):
     Lance le jeu avec les quadrants sélectionnés
     """
     pygame.display.set_caption("Partie en cours")
-    
-    
+
     # Couleurs
+    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
     GRAY = (150, 150, 150)
@@ -111,6 +243,9 @@ def start_game(screen, quadrants_data):
     
     # Créer le plateau de jeu à partir des données des quadrants
     board_grid = create_game_board(quadrants_data)
+    
+    # Créer l'instance d'animation
+    animation = Animation()
     
     # Variables pour la gestion du jeu
     selected_pawn = None 
@@ -151,14 +286,15 @@ def start_game(screen, quadrants_data):
 
     # Font standard pour les boutons et textes
     font = pygame.font.Font(None, 24)
-    
-    
     # Fonction pour retourner à l'écran précédent
     def return_to_previous():
         return
     
     # Variable pour stocker le dernier mode de jeu connu
     last_known_game_mode = current_game_mode
+    
+    # Horloge pour contrôler le framerate
+    clock = pygame.time.Clock()
     
     running = True
     while running:
@@ -199,8 +335,8 @@ def start_game(screen, quadrants_data):
         # Boutons
         back_button = pygame.Rect(20, 20, 80, 30)
         
-        screen.fill(WHITE)
-        
+        background_scaled = pygame.transform.scale(background_image, screen.get_size())
+        screen.blit(background_scaled, (0, 0))        
         # Dessiner le contour du plateau
         if frame_image:
             # Redimensionner le cadre à la taille du plateau avec bordure
@@ -228,28 +364,24 @@ def start_game(screen, quadrants_data):
                 
                 # Toujours dessiner une bordure
                 pygame.draw.rect(screen, BLACK, cell_rect, 2)
-                
-                # Dessiner les pions s'il y en a sur cette case
-                if pawn_grid[row][col] > 0:
-                    pawn_color = DARK_RED if pawn_grid[row][col] == 1 else DARK_BLUE
-                    pawn_radius = cell_size // 3
-                    pawn_center = (
-                        cell_rect.centerx,
-                        cell_rect.centery
-                    )
-                    
-                    # Mettre en évidence le pion sélectionné
-                    if selected_pawn and selected_pawn == (row, col):
-                        # Dessiner un cercle de sélection
-                        highlight_radius = pawn_radius + 4
-                        pygame.draw.circle(screen, (255, 255, 0), pawn_center, highlight_radius, 3)
-                    
-                    # Dessiner le pion 
-                    pygame.draw.circle(screen, pawn_color, pawn_center, pawn_radius) #pion
-                    pygame.draw.circle(screen, BLACK, pawn_center, pawn_radius, 2) #bordure
+        
+        # Dessiner les pions avec animations
+        draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation)
+        
+        # Vérifier si l'animation est terminée et exécuter le mouvement en attente
+        if not animation.is_moving() and animation.has_pending_move():
+            winner_result, connected_result, game_over_result = animation.execute_pending_move(pawn_grid, current_game_mode)
+            if winner_result is not None:
+                winner = winner_result
+                connected_pawns = connected_result
+                game_over = game_over_result
+            
+            # Si le jeu n'est pas terminé, passer au joueur suivant
+            if not game_over:
+                current_player = 3 - current_player  # Alterné entre 1 et 2
         
         # Dessiner les mouvements possibles
-        if selected_pawn and possible_moves and not game_over:
+        if selected_pawn and possible_moves and not game_over and not animation.is_moving():
             highlight_possible_moves(screen, possible_moves, board_x, board_y, cell_size)
         
         # Mettre en surbrillance les pions connectés si le jeu est terminé en mode Congress
@@ -268,7 +400,6 @@ def start_game(screen, quadrants_data):
         mode_text = font.render(f"Mode: {mode_names[current_game_mode]}", True, BLACK)
         screen.blit(mode_text, (current_width - 200, 50))
 
-        
         # Dessiner le bouton retour
         pygame.draw.rect(screen, BLUE, back_button)
         back_text = font.render("Retour", True, WHITE)
@@ -287,7 +418,7 @@ def start_game(screen, quadrants_data):
                     return_to_previous()
                     return
                 
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN and not game_over and not animation.is_moving():
                 # Quitter bouton retour
                 if back_button.collidepoint(event.pos):
                     return_to_previous()
@@ -309,21 +440,17 @@ def start_game(screen, quadrants_data):
                             
                             # Vérifier si le clic est sur l'un des mouvements possibles
                             if (row, col) in possible_moves:
-                                # Déplacer le pion
-                                pawn_grid[row][col] = pawn_grid[selected_row][selected_col]
-                                pawn_grid[selected_row][selected_col] = 0
+                                # Démarrer l'animation AVEC la couleur du pion
+                                animation.start_move(selected_row, selected_col, row, col, board_x, board_y, cell_size, pawn_grid[selected_row][selected_col])
                                 
-                                # Vérifier la condition de victoire pour le mode Congress
-                                if current_game_mode == 1:  # Si mode Congress
-                                    winner, connected_pawns = check_victory(pawn_grid)
-                                    if winner > 0:
-                                        game_over = True
+                                # Stocker le mouvement pour l'exécuter après l'animation
+                                animation.pending_move = {
+                                    'from': (selected_row, selected_col),
+                                    'to': (row, col),
+                                    'pawn_color': pawn_grid[selected_row][selected_col]
+                                }
                                 
-                                # Si le jeu n'est pas terminé, passer au joueur suivant
-                                if not game_over:
-                                    current_player = 3 - current_player  # Alterné entre 1 et 2
-                                
-                                # Réinitialiser la sélection
+                                # Réinitialiser la sélection immédiatement
                                 selected_pawn = None
                                 possible_moves = []
                             
@@ -346,3 +473,4 @@ def start_game(screen, quadrants_data):
                                 possible_moves = get_valid_moves(row, col, board_grid, pawn_grid)
                 
         pygame.display.flip()
+        clock.tick(60)  # 60 FPS pour des animations fluides

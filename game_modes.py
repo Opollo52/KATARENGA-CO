@@ -1,4 +1,6 @@
 import pygame
+import os
+import sys
 
 # Variables globales pour garder le mode de jeu et l'adversaire
 GLOBAL_SELECTED_GAME = 0 
@@ -14,12 +16,14 @@ def show_game_modes(screen):
     # Utiliser les dimensions actuelles de l'écran pour un meilleur centrage
     WIDTH, HEIGHT = screen.get_width(), screen.get_height()
     pygame.display.set_caption("Sélection du mode de jeu")
-    
+    #couleurs
+    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
     WHITE = (255, 255, 255)
-    BLUE = (50, 100, 200)  
-    RED = (255, 50, 50)  
     BLACK = (0, 0, 0)
-    GREEN = (50, 180, 50)
+    GREEN = (176, 242, 194)   
+    BLUE = (169, 203, 215)   
+    RED = (255, 105, 97)      
     font = pygame.font.Font(None, 36)
     title_font = pygame.font.Font(None, 42)
     
@@ -140,7 +144,8 @@ def show_game_modes(screen):
     
     running = True
     while running:
-        screen.fill(WHITE)
+        background_scaled = pygame.transform.scale(background_image, screen.get_size())
+        screen.blit(background_scaled, (0, 0))
         
         # Afficher les titres des sections
         draw_section_title("Choisissez votre jeu", game_title_y)
@@ -150,21 +155,21 @@ def show_game_modes(screen):
         for i, rect in enumerate(game_buttons):
             color = RED if i == selected_game else BLUE
             pygame.draw.rect(screen, color, rect)
-            draw_centered_text(game_types[i], rect, WHITE)
+            draw_centered_text(game_types[i], rect, BLACK)
         
         # Dessiner les boutons d'adversaire avec le bouton sélectionné en rouge
         for i, rect in enumerate(opponent_buttons):
             color = RED if i == selected_opponent else BLUE
             pygame.draw.rect(screen, color, rect)
-            draw_centered_text(opponent_types[i], rect, WHITE)
+            draw_centered_text(opponent_types[i], rect, BLACK)
         
         # Dessiner le bouton Jouer
         pygame.draw.rect(screen, GREEN, play_button)
-        draw_centered_text("Jouer", play_button, WHITE)
+        draw_centered_text("Jouer", play_button, BLACK)
         
         # Dessiner le bouton Retour
         pygame.draw.rect(screen, BLUE, back_button)
-        draw_centered_text("Retour", back_button, WHITE)
+        draw_centered_text("Retour", back_button, BLACK)
         
         # Si c'est la première exécution, afficher un message spécial
         if FIRST_RUN:
