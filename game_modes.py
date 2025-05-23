@@ -148,9 +148,25 @@ def show_game_modes(screen):
         screen.blit(background_scaled, (0, 0))
         
         # Afficher les titres des sections
-        draw_section_title("Choisissez votre jeu", game_title_y)
-        draw_section_title("Choisissez votre adversaire", opponent_title_y)
-        
+        title_text = title_font.render("Choisissez votre jeu", True, BLACK)
+        title_rect = title_text.get_rect(center=(WIDTH // 2, game_title_y))
+
+        # Créer une surface transparente
+        bg_surface = pygame.Surface((title_rect.width + 16, title_rect.height + 8), pygame.SRCALPHA)
+        bg_surface.fill((255, 255, 255, 120))
+        screen.blit(bg_surface, (title_rect.x - 8, title_rect.y - 4))
+
+        screen.blit(title_text, title_rect)  
+        # Titre de la section adversaire      
+        opponent_title_text = title_font.render("Choisissez votre adversaire", True, BLACK)
+        opponent_title_rect = opponent_title_text.get_rect(center=(WIDTH // 2, opponent_title_y))
+
+        bg_surface = pygame.Surface((opponent_title_rect.width + 16, opponent_title_rect.height + 8), pygame.SRCALPHA)
+        bg_surface.fill((255, 255, 255, 120))
+        screen.blit(bg_surface, (opponent_title_rect.x - 8, opponent_title_rect.y - 4))
+
+        screen.blit(opponent_title_text, opponent_title_rect)
+
         # Dessiner les boutons de type de jeu avec le bouton sélectionné en rouge
         for i, rect in enumerate(game_buttons):
             color = RED if i == selected_game else BLUE
@@ -173,15 +189,24 @@ def show_game_modes(screen):
         
         # Si c'est la première exécution, afficher un message spécial
         if FIRST_RUN:
-            first_run_text = "Mode par défaut sélectionné"
-            info_text = font.render(first_run_text, True, BLACK)
-            info_rect = info_text.get_rect(center=(WIDTH // 2, start_y - 30))
-            screen.blit(info_text, info_rect)
+            first_text = font.render("Mode par défaut sélectionné", True, BLACK)
+            first_rect = first_text.get_rect(center=(WIDTH // 2, start_y - 30))
+            
+            bg_surface = pygame.Surface((first_rect.width + 16, first_rect.height + 8), pygame.SRCALPHA)
+            bg_surface.fill((255, 255, 255, 120))
+            screen.blit(bg_surface, (first_rect.x - 8, first_rect.y - 4))
+            
+            screen.blit(first_text, first_rect)
         
         # Afficher la sélection actuelle
         current_selection = f"Mode actuel : {game_types[selected_game]} - {opponent_types[selected_opponent]}"
         selection_text = font.render(current_selection, True, BLACK)
         selection_rect = selection_text.get_rect(center=(WIDTH // 2, selection_text_y))
+
+        bg_surface = pygame.Surface((selection_rect.width + 16, selection_rect.height + 8), pygame.SRCALPHA)
+        bg_surface.fill((255, 255, 255, 120))
+        screen.blit(bg_surface, (selection_rect.x - 8, selection_rect.y - 4))
+
         screen.blit(selection_text, selection_rect)
         
         # Gestion des événements

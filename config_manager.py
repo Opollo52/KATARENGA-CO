@@ -2,7 +2,6 @@ import json
 import os
 import sys
 import pygame
-import numpy as np
 
 def read_config():
     """
@@ -116,6 +115,7 @@ def create_default_quadrants(config):
     # Redimensionner les images
     for key in images:
         images[key] = pygame.transform.scale(images[key], (cell_size, cell_size))
+    
         
     use_images = True
     
@@ -143,10 +143,6 @@ def create_default_quadrants(config):
                     if use_images and cell_value in images:
                         # Utiliser l'image
                         surface.blit(images[cell_value], rect)
-                    else:
-                        # Utiliser une couleur
-                        color = colors.get(cell_value, (255, 255, 255))
-                        pygame.draw.rect(surface, color, rect)
                     
                     # Ajouter une bordure
                     pygame.draw.rect(surface, (0, 0, 0), rect, 2)

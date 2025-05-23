@@ -223,7 +223,7 @@ def start_game(screen, quadrants_data):
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
     GRAY = (150, 150, 150)
-    BLUE = (0, 0, 250)
+    RED = (255, 105, 97)
     GREEN = (0, 200, 0)
     DARK_BLUE = (0, 0, 150)   
     DARK_RED = (200, 0, 0) 
@@ -333,7 +333,7 @@ def start_game(screen, quadrants_data):
         )
         
         # Boutons
-        back_button = pygame.Rect(20, 20, 80, 30)
+        back_button = pygame.Rect(20, 20, 120, 30)
         
         background_scaled = pygame.transform.scale(background_image, screen.get_size())
         screen.blit(background_scaled, (0, 0))        
@@ -400,9 +400,9 @@ def start_game(screen, quadrants_data):
         mode_text = font.render(f"Mode: {mode_names[current_game_mode]}", True, BLACK)
         screen.blit(mode_text, (current_width - 200, 50))
 
-        # Dessiner le bouton retour
-        pygame.draw.rect(screen, BLUE, back_button)
-        back_text = font.render("Retour", True, WHITE)
+        # Dessiner le bouton abandonener
+        pygame.draw.rect(screen, RED, back_button)
+        back_text = font.render("Abandonner", True, BLACK)
         back_text_rect = back_text.get_rect(center=back_button.center)
         screen.blit(back_text, back_text_rect)
         
