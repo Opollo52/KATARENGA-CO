@@ -1,8 +1,9 @@
+
 import pygame
 import os
 import sys
 import time
-from pawn import get_valid_moves, highlight_possible_moves, is_valid_move
+from pawn import get_valid_moves, highlight_possible_moves
 from game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
 from congress import check_victory, highlight_connected_pawns, display_victory_message
 
@@ -14,8 +15,8 @@ class Animation:
         self.move_duration = 0.8 
         self.start_pos = None
         self.end_pos = None
-        self.moving_pawn_color = None  # Stocker la couleur du pion en mouvement
-        self.pending_move = None  # Stocker le mouvement à exécuter après l'animation
+        self.moving_pawn_color = None  
+        self.pending_move = None
         
     def start_move(self, start_row, start_col, end_row, end_col, board_x, board_y, cell_size, pawn_color):
         """Démarre une animation de déplacement"""
@@ -40,8 +41,6 @@ class Animation:
             
         elapsed = time.time() - self.move_start_time
         progress = min(elapsed / self.move_duration, 1.0)
-        
-        # Easing simple (ease-out)
         progress = 1 - (1 - progress) ** 3
         
         current_x = self.start_pos[0] + (self.end_pos[0] - self.start_pos[0]) * progress
@@ -216,14 +215,12 @@ def start_game(screen, quadrants_data):
     Lance le jeu avec les quadrants sélectionnés
     """
     pygame.display.set_caption("Partie en cours")
-
+    
     # Couleurs
-    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
     GRAY = (150, 150, 150)
-    RED = (255, 105, 97)
+    BLUE = (0, 0, 250)
     GREEN = (0, 200, 0)
     DARK_BLUE = (0, 0, 150)   
     DARK_RED = (200, 0, 0) 
@@ -286,6 +283,7 @@ def start_game(screen, quadrants_data):
 
     # Font standard pour les boutons et textes
     font = pygame.font.Font(None, 24)
+    
     # Fonction pour retourner à l'écran précédent
     def return_to_previous():
         return
@@ -333,10 +331,10 @@ def start_game(screen, quadrants_data):
         )
         
         # Boutons
-        back_button = pygame.Rect(20, 20, 120, 30)
+        back_button = pygame.Rect(20, 20, 80, 30)
         
-        background_scaled = pygame.transform.scale(background_image, screen.get_size())
-        screen.blit(background_scaled, (0, 0))        
+        screen.fill(WHITE)
+        
         # Dessiner le contour du plateau
         if frame_image:
             # Redimensionner le cadre à la taille du plateau avec bordure
@@ -400,9 +398,9 @@ def start_game(screen, quadrants_data):
         mode_text = font.render(f"Mode: {mode_names[current_game_mode]}", True, BLACK)
         screen.blit(mode_text, (current_width - 200, 50))
 
-        # Dessiner le bouton abandonener
-        pygame.draw.rect(screen, RED, back_button)
-        back_text = font.render("Abandonner", True, BLACK)
+        # Dessiner le bouton retour
+        pygame.draw.rect(screen, BLUE, back_button)
+        back_text = font.render("Retour", True, WHITE)
         back_text_rect = back_text.get_rect(center=back_button.center)
         screen.blit(back_text, back_text_rect)
         
@@ -473,4 +471,4 @@ def start_game(screen, quadrants_data):
                                 possible_moves = get_valid_moves(row, col, board_grid, pawn_grid)
                 
         pygame.display.flip()
-        clock.tick(60)  # 60 FPS pour des animations fluides
+        clock.tick(144)
