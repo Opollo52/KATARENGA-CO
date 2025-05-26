@@ -434,7 +434,7 @@ def start_game(screen, quadrants_data):
                     return_to_previous()
                     return
                 
-            elif event.type == pygame.MOUSEBUTTONDOWN and not game_over and not animation.is_moving():
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 # Quitter bouton retour
                 if back_button.collidepoint(event.pos):
                     return_to_previous()
