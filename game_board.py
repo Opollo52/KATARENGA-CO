@@ -437,9 +437,11 @@ def start_game(screen, quadrants_data):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # Quitter bouton retour
                 if back_button.collidepoint(event.pos):
+                    display_victory_message(screen, 0)  # Afficher un message d'abandon
+                    pygame.display.flip()
+                    pygame.time.delay(2000)  # Pause de 2 secondes (2000 ms)
                     return_to_previous()
                     return
-                
                 # clic sur le plateau
                 mouse_x, mouse_y = event.pos
                 # Si le clic est dans les limites du plateau
@@ -489,4 +491,39 @@ def start_game(screen, quadrants_data):
                                 possible_moves = get_valid_moves(row, col, board_grid, pawn_grid)
                 
         pygame.display.flip()
-        clock.tick(60)  # 60 FPS pour des animations fluides
+        clock.tick(60) 
+        
+def display_victory_message(screen, winner):
+    """
+    Affiche un message de victoire à l'écran.
+    """
+    
+    message_color = (0, 150, 0) # Vert
+    text_color = (255, 255, 255)  # Blanc
+    
+    # Police
+    font = pygame.font.Font(None, 48)
+    
+    message = f"Victoire du joueur {'Rouge' if winner == 1 else 'Bleu'} !"
+    
+    # Créer la surface du texte
+    text = font.render(message, True, text_color)
+    text_rect = text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
+    
+    # Créer un fond pour le message
+    padding = 20
+    message_rect = pygame.Rect(
+        text_rect.left - padding,
+        text_rect.top - padding,
+        text_rect.width + 2 * padding,
+        text_rect.height + 2 * padding
+    )
+    s = pygame.Surface((message_rect.width, message_rect.height), pygame.SRCALPHA)
+    s.fill((message_color[0], message_color[1], message_color[2], 200)) 
+    screen.blit(s, message_rect)
+    
+    # Dessiner une bordure
+    pygame.draw.rect(screen, message_color, message_rect, 3)
+    
+    # Dessiner le texte
+    screen.blit(text, text_rect)
