@@ -3,6 +3,7 @@ import pygame
 import os
 import sys
 from config_manager import initialize_quadrants
+from assets.colors import Colors
 
 def load_quadrants():
     """Charge les quadrants depuis le fichier JSON en initialisant si nécessaire"""
@@ -20,12 +21,12 @@ def show_quadrant_library(screen):
     
     # Couleurs
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-    LIGHT_GRAY = (240, 240, 240)
-    DARK_GRAY = (100, 100, 100)
-    RED = (255, 105, 97)
+    background_image = pygame.image.load(os.path.join(script_dir, "assets", "img", "fond.png"))
+    WHITE = Colors.WHITE
+    BLACK = Colors.BLACK
+    LIGHT_GRAY = Colors.LIGHT_GRAY
+    DARK_GRAY = Colors.DARK_GRAY
+    RED = Colors.RED
     # Polices - tailles adaptatives
     title_font = pygame.font.Font(None, int(HEIGHT * 0.06))  # 6% de la hauteur
     button_font = pygame.font.Font(None, int(HEIGHT * 0.04))  # 4% de la hauteur

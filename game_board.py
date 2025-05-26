@@ -231,7 +231,8 @@ def start_game(screen, quadrants_data):
 
     # Couleurs
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
+    background_image = pygame.image.load(os.path.join(script_dir, "assets", "img", "fond.png"))
+    
     WHITE = Colors.WHITE
     BLACK = Colors.BLACK
     GRAY = Colors.GRAY
@@ -246,13 +247,13 @@ def start_game(screen, quadrants_data):
     
     # Dictionnaire des valeurs de cellule aux images
     images = {}
-    images[1] = pygame.image.load(os.path.join(PATH, "img/yellow.png"))  
-    images[2] = pygame.image.load(os.path.join(PATH, "img/green.png"))  
-    images[3] = pygame.image.load(os.path.join(PATH, "img/blue.png"))   
-    images[4] = pygame.image.load(os.path.join(PATH, "img/red.png"))   
-    
-    # Chargement de l'image du cadre
-    frame_image = pygame.image.load(os.path.join(PATH, "img/frame.png"))
+    images[1] = pygame.image.load(os.path.join(PATH, "assets", "img", "yellow.png"))  
+    images[2] = pygame.image.load(os.path.join(PATH, "assets", "img", "green.png"))  
+    images[3] = pygame.image.load(os.path.join(PATH, "assets", "img", "blue.png"))   
+    images[4] = pygame.image.load(os.path.join(PATH, "assets", "img", "red.png"))
+
+    # Chargement de l'image du cadre    
+    frame_image = pygame.image.load(os.path.join(PATH, "assets", "img", "frame.png"))    
     
     # Créer le plateau de jeu à partir des données des quadrants
     board_grid = create_game_board(quadrants_data)

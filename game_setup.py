@@ -3,6 +3,7 @@ import json
 import os
 import sys
 from quadrant_viewer import load_quadrants
+from assets.colors import Colors
 
 def show_game_setup(screen):
     """
@@ -15,14 +16,14 @@ def show_game_setup(screen):
     
     # Couleurs
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-    LIGHT_GRAY = (240, 240, 240)
-    DARK_GRAY = (100, 100, 100)
-    BLUE = (169, 203, 215)   
-    RED = (255, 105, 97)      
-    HIGHLIGHT = (255, 220, 120)
+    background_image = pygame.image.load(os.path.join(script_dir, "assets", "img", "fond.png"))
+    WHITE = Colors.WHITE
+    BLACK = Colors.BLACK    
+    LIGHT_GRAY = Colors.LIGHT_GRAY
+    DARK_GRAY = Colors.DARK_GRAY
+    BLUE = Colors.BLUE  
+    RED = Colors.RED    
+    HIGHLIGHT = Colors.HIGHLIGHT
     
     # Polices
     title_font = pygame.font.Font(None, 36)

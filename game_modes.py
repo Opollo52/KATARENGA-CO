@@ -1,6 +1,7 @@
 import pygame
 import os
 import sys
+from assets.colors import Colors
 
 # Variables globales pour garder le mode de jeu et l'adversaire
 GLOBAL_SELECTED_GAME = 0 
@@ -18,12 +19,11 @@ def show_game_modes(screen):
     pygame.display.set_caption("Sélection du mode de jeu")
     #couleurs
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-    GREEN = (176, 242, 194)   
-    BLUE = (169, 203, 215)   
-    RED = (255, 105, 97)      
+    background_image = pygame.image.load(os.path.join(script_dir, "assets", "img", "fond.png"))
+    BLACK = Colors.BLACK
+    GREEN = Colors.GREEN 
+    BLUE = Colors.BLUE   
+    RED = Colors.RED      
     font = pygame.font.Font(None, 36)
     title_font = pygame.font.Font(None, 42)
     

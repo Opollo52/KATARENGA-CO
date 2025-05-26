@@ -1,16 +1,19 @@
 import pygame
 import os
 import sys
+from assets.colors import Colors
+
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 def run_menu(screen):
     # Définition des couleurs
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
-    logo_image = pygame.image.load(os.path.join(script_dir, "img", "logo.png"))
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-    BLUE = (169, 203, 215)  # 
-    RED = (255, 105, 97)    
+    background_image = pygame.image.load(os.path.join(script_dir, "assets", "img", "fond.png"))
+    logo_image = pygame.image.load(os.path.join(script_dir, "assets", "img", "logo.png"))
+    WHITE = Colors.WHITE
+    BLACK = Colors.BLACK
+    RED = Colors.RED
+    BLUE = Colors.BLUE
+    
     font = pygame.font.Font(None, 36)
 
     # Configuration dynamique des boutons (identique à hub.py)

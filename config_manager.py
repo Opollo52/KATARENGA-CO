@@ -106,10 +106,10 @@ def create_default_quadrants(config):
     
     # Charger les images 
     images = {
-        1: pygame.image.load(os.path.join(script_dir, "img", "yellow.png")),  
-        2: pygame.image.load(os.path.join(script_dir, "img", "green.png")),   
-        3: pygame.image.load(os.path.join(script_dir, "img", "blue.png")),    
-        4: pygame.image.load(os.path.join(script_dir, "img", "red.png"))      
+        1: pygame.image.load(os.path.join(script_dir, "assets", "img", "yellow.png")),  
+        2: pygame.image.load(os.path.join(script_dir, "assets", "img", "green.png")),   
+        3: pygame.image.load(os.path.join(script_dir, "assets", "img", "blue.png")),    
+        4: pygame.image.load(os.path.join(script_dir, "assets", "img", "red.png"))      
     }
     
     # Redimensionner les images

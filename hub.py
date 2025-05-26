@@ -1,19 +1,21 @@
 import pygame
 import os
 import sys
-from quadrant import show_quadrant
+from menu_quadrant import show_quadrant
 from game_modes import show_game_modes
+from assets.colors import Colors    
 
 def show_settings(screen):
     # Définition des couleurs
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
-    logo_image = pygame.image.load(os.path.join(script_dir, "img", "logo.png"))
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-    GREEN = (176, 242, 194)   
-    BLUE = (169, 203, 215)   
-    RED = (255, 105, 97)      
+    background_image = pygame.image.load(os.path.join(script_dir, "assets", "img", "fond.png"))
+    logo_image = pygame.image.load(os.path.join(script_dir, "assets", "img", "logo.png"))
+    WHITE = Colors.WHITE
+    BLACK = Colors.BLACK
+    GREEN = Colors.GREEN
+    BLUE = Colors.BLUE
+    RED = Colors.RED   
+          
     font = pygame.font.Font(None, 36)
 
     # Configuration dynamique des boutons

@@ -38,10 +38,10 @@ def show_creator(screen):
     
     # Dictionnaire couleurs et img
     COLOR_DATA = {
-        (250, 250, 0): {"image": "img/yellow.png", "value": 1},
-        (0, 0, 250): {"image": "img/blue.png", "value": 3}, 
-        (0, 250, 0): {"image": "img/green.png", "value": 2},
-        (250, 0, 0): {"image": "img/red.png", "value": 4}, 
+        (250, 250, 0): {"image": "assets/img/yellow.png", "value": 1},
+        (0, 0, 250): {"image": "assets/img/blue.png", "value": 3}, 
+        (0, 250, 0): {"image": "assets/img/green.png", "value": 2},
+        (250, 0, 0): {"image": "assets/img/red.png", "value": 4}, 
     }
 
     # Chemin du dossier contenant les images
@@ -53,7 +53,7 @@ def show_creator(screen):
 
     # Chargement de l'image de fond
     background_image = None
-    background_path = os.path.join(SCRIPT_DIR, "img/fond.png")
+    background_path = os.path.join(SCRIPT_DIR, "assets", "img", "fond.png")
     if os.path.exists(background_path):
         background_image = pygame.image.load(background_path)
         background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
