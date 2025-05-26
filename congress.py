@@ -1,4 +1,3 @@
-import numpy as np
 import pygame
 
 def connected(row, col, pawn_grid, player, visited, directions):
