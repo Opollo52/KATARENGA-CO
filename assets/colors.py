@@ -1,0 +1,12 @@
+class Colors:
+    DARK_RED = (200, 0, 0)
+    DARK_BLUE = (0, 0, 150)
+    BLACK = (0, 0, 0)
+    WHITE = (255, 255, 255)
+    GREEN = (176, 242, 194)
+    BLUE = (169, 203, 215)
+    RED = (255, 105, 97)
+    LIGHT_GRAY = (240, 240, 240)
+    DARK_GRAY = (100, 100, 100)
+    GRAY = (150, 150, 150)
+    HIGHLIGHT = (255, 220, 120)
