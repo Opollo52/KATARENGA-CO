@@ -7,6 +7,10 @@ from pawn import get_valid_moves, highlight_possible_moves, is_valid_move
 from game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
 from congress import check_victory, highlight_connected_pawns, display_victory_message
 
+def get_current_game_mode():
+    """Récupère le mode de jeu actuel de manière sûre"""
+    from game_modes import GLOBAL_SELECTED_GAME
+    return GLOBAL_SELECTED_GAME
 # Classe simple pour les animations de pions
 def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation):
     """Dessine les pions avec animations simples"""
@@ -428,20 +432,15 @@ def start_game(screen, quadrants_data):
                 return_to_previous()
                 return
                 
-            elif event.type == pygame.KEYDOWN:
-                # Quitter avec la touche Échap
-                if event.key == pygame.K_ESCAPE:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Quitter bouton abandonner
+                if back_button.collidepoint(event.pos):
+                    display_victory_message(screen, "Abandon - Retour au menu")
+                    pygame.display.flip()
+                    pygame.time.delay(2000)
                     return_to_previous()
                     return
                 
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Quitter bouton retour
-                if back_button.collidepoint(event.pos):
-                    display_victory_message(screen, 0)  # Afficher un message d'abandon
-                    pygame.display.flip()
-                    pygame.time.delay(2000)  # Pause de 2 secondes (2000 ms)
-                    return_to_previous()
-                    return
                 # clic sur le plateau
                 mouse_x, mouse_y = event.pos
                 # Si le clic est dans les limites du plateau
@@ -491,8 +490,9 @@ def start_game(screen, quadrants_data):
                                 possible_moves = get_valid_moves(row, col, board_grid, pawn_grid)
                 
         pygame.display.flip()
-        clock.tick(60) 
-        
+        clock.tick(60)  # 60 FPS pour des animations fluides
+
+
 def display_victory_message(screen, winner):
     """
     Affiche un message de victoire à l'écran.

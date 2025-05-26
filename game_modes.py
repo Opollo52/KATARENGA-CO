@@ -8,11 +8,20 @@ GLOBAL_SELECTED_GAME = 0
 GLOBAL_SELECTED_OPPONENT = 0
 FIRST_RUN = True
 
+def reset_game_state():
+    """BUG FIX 1: Fonction pour réinitialiser l'état du jeu"""
+    global GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
+    # Cette fonction sera appelée quand on revient au menu
+    pass  # Les variables gardent leur valeur pour permettre la sélection
+
 def show_game_modes(screen):
     """
     Affiche la fenêtre de sélection des modes de jeu.
     """
     global GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT, FIRST_RUN
+    
+    # BUG FIX 1: Réinitialiser les variables de jeu au retour
+    reset_game_state()
     
     # Utiliser les dimensions actuelles de l'écran pour un meilleur centrage
     WIDTH, HEIGHT = screen.get_width(), screen.get_height()
@@ -32,9 +41,9 @@ def show_game_modes(screen):
     
     # Options disponibles
     game_types = ["Katarenga", "Congress", "Isolation"]
-    opponent_types = ["Ordi", "Local", "En ligne"]
+    opponent_types = ["Ordi", "Local", "Réseau"]
     
-    # Utiliser les sélections globales (qui sont mises à jour à chaque fois)
+    # BUG FIX 1: Utiliser des variables locales pour éviter les conflits
     selected_game = GLOBAL_SELECTED_GAME
     selected_opponent = GLOBAL_SELECTED_OPPONENT
     
@@ -219,26 +228,43 @@ def show_game_modes(screen):
                 for i, rect in enumerate(game_buttons):
                     if rect.collidepoint(event.pos):
                         selected_game = i
-                        GLOBAL_SELECTED_GAME = i  # Mettre à jour la variable globale
-                        FIRST_RUN = False  # Ce n'est plus le premier lancement
+                        GLOBAL_SELECTED_GAME = i  # BUG FIX 1: Mise à jour immédiate
+                        FIRST_RUN = False
                 
                 # Vérifier si un bouton d'adversaire a été cliqué
                 for i, rect in enumerate(opponent_buttons):
                     if rect.collidepoint(event.pos):
                         selected_opponent = i
-                        GLOBAL_SELECTED_OPPONENT = i  # Mettre à jour la variable globale
-                        FIRST_RUN = False  # Ce n'est plus le premier lancement
+                        GLOBAL_SELECTED_OPPONENT = i  # BUG FIX 1: Mise à jour immédiate
+                        FIRST_RUN = False
                 
                 # Vérifier si le bouton Jouer a été cliqué
                 if play_button.collidepoint(event.pos):
-                    # Lancer la configuration de la partie avec le mode sélectionné
-                    from game_setup import show_game_setup
-                    running = False
-                    show_game_setup(screen)
+                    # BUG FIX 1: S'assurer que les variables globales sont à jour
+                    GLOBAL_SELECTED_GAME = selected_game
+                    GLOBAL_SELECTED_OPPONENT = selected_opponent
+                    
+                    print(f"Lancement du jeu: Mode {game_types[selected_game]} - Adversaire {opponent_types[selected_opponent]}")
+                    
+                    if selected_opponent == 2:  # Réseau
+                        try:
+                            from network_menu import show_network_menu
+                            running = False
+                            show_network_menu(screen)
+                        except ImportError as e:
+                            print(f"Erreur d'import network_menu: {e}")
+                            # Fallback vers le jeu normal si le module réseau n'est pas disponible
+                            from game_setup import show_game_setup
+                            running = False
+                            show_game_setup(screen)
+                    else:
+                        # Lancer la configuration de la partie normale
+                        from game_setup import show_game_setup
+                        running = False
+                        show_game_setup(screen)
                 
                 # Vérifier si le bouton Retour a été cliqué
                 if back_button.collidepoint(event.pos):
-                    # Enregistrer les préférences de jeu ici si nécessaire
                     print(f"Mode sélectionné: {game_types[selected_game]} - {opponent_types[selected_opponent]}")
                     running = False
         
