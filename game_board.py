@@ -1,98 +1,18 @@
-
 import pygame
 import os
 import sys
 import time
-from pawn import get_valid_moves, highlight_possible_moves
+from assets.colors import Colors
+from pawn import get_valid_moves, highlight_possible_moves, is_valid_move
 from game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
 from congress import check_victory, highlight_connected_pawns, display_victory_message
 
 # Classe simple pour les animations de pions
-class Animation:
-    def __init__(self):
-        self.moving_pawn = None
-        self.move_start_time = 0
-        self.move_duration = 0.8 
-        self.start_pos = None
-        self.end_pos = None
-        self.moving_pawn_color = None  
-        self.pending_move = None
-        
-    def start_move(self, start_row, start_col, end_row, end_col, board_x, board_y, cell_size, pawn_color):
-        """Démarre une animation de déplacement"""
-        self.moving_pawn = (start_row, start_col, end_row, end_col)
-        self.moving_pawn_color = pawn_color  # Sauvegarder la couleur
-        self.move_start_time = time.time()
-        
-        # Positions d'écran
-        self.start_pos = (
-            board_x + start_col * cell_size + cell_size // 2,
-            board_y + start_row * cell_size + cell_size // 2
-        )
-        self.end_pos = (
-            board_x + end_col * cell_size + cell_size // 2,
-            board_y + end_row * cell_size + cell_size // 2
-        )
-    
-    def get_current_pos(self):
-        """Retourne la position actuelle du pion en mouvement"""
-        if not self.moving_pawn:
-            return None
-            
-        elapsed = time.time() - self.move_start_time
-        progress = min(elapsed / self.move_duration, 1.0)
-        progress = 1 - (1 - progress) ** 3
-        
-        current_x = self.start_pos[0] + (self.end_pos[0] - self.start_pos[0]) * progress
-        current_y = self.start_pos[1] + (self.end_pos[1] - self.start_pos[1]) * progress
-        
-        if progress >= 1.0:
-            self.moving_pawn = None
-            self.moving_pawn_color = None  # Réinitialiser la couleur
-            # Marquer que l'animation est terminée mais ne pas réinitialiser pending_move ici
-            
-        return (int(current_x), int(current_y))
-    
-    def is_moving(self):
-        """Vérifie si une animation est en cours"""
-        return self.moving_pawn is not None
-
-    def has_pending_move(self):
-        """Vérifie s'il y a un mouvement en attente à exécuter"""
-        return self.pending_move is not None
-    
-    def execute_pending_move(self, pawn_grid, current_game_mode):
-        """Exécute le mouvement en attente et retourne les infos de victoire"""
-        if not self.pending_move:
-            return None, None, None
-            
-        from_pos = self.pending_move['from']
-        to_pos = self.pending_move['to']
-        
-        # Exécuter le mouvement dans la grille logique
-        pawn_grid[to_pos[0]][to_pos[1]] = pawn_grid[from_pos[0]][from_pos[1]]
-        pawn_grid[from_pos[0]][from_pos[1]] = 0
-        
-        # Vérifier la condition de victoire pour le mode Congress
-        winner = 0
-        connected_pawns = []
-        game_over = False
-        
-        if current_game_mode == 1:  # Si mode Congress
-            winner, connected_pawns = check_victory(pawn_grid)
-            if winner > 0:
-                game_over = True
-        
-        # Nettoyer le mouvement en attente
-        self.pending_move = None
-        
-        return winner, connected_pawns, game_over
-
 def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation):
     """Dessine les pions avec animations simples"""
-    DARK_RED = (200, 0, 0)
-    DARK_BLUE = (0, 0, 150)
-    BLACK = (0, 0, 0)
+    DARK_RED = Colors.DARK_RED
+    DARK_BLUE = Colors.DARK_BLUE
+    BLACK = Colors.BLACK
     
     # Obtenir la position du pion en mouvement
     moving_pos = animation.get_current_pos()
@@ -101,7 +21,7 @@ def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected
     for row in range(8):
         for col in range(8):
             if pawn_grid[row][col] > 0:
-                # Skip le pion en mouvement (on le dessine séparément)
+                # Skip le pion en mouvement à sa position D'ORIGINE (pas de destination)
                 if (moving_pawn_info and 
                     moving_pawn_info[0] == row and moving_pawn_info[1] == col):
                     continue
@@ -134,6 +54,99 @@ def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected
         
         pygame.draw.circle(screen, pawn_color, moving_pos, radius)
         pygame.draw.circle(screen, BLACK, moving_pos, radius, 2)
+
+
+# Version améliorée de get_current_pos pour une meilleure gestion
+class Animation:
+    def __init__(self):
+        self.moving_pawn = None
+        self.move_start_time = 0
+        self.move_duration = 0.8 
+        self.start_pos = None
+        self.end_pos = None
+        self.moving_pawn_color = None  
+        self.pending_move = None
+        self.animation_finished = False  # Nouveau flag
+        
+    def start_move(self, start_row, start_col, end_row, end_col, board_x, board_y, cell_size, pawn_color):
+        """Démarre une animation de déplacement"""
+        self.moving_pawn = (start_row, start_col, end_row, end_col)
+        self.moving_pawn_color = pawn_color
+        self.move_start_time = time.time()
+        self.animation_finished = False
+        
+        # Positions d'écran
+        self.start_pos = (
+            board_x + start_col * cell_size + cell_size // 2,
+            board_y + start_row * cell_size + cell_size // 2
+        )
+        self.end_pos = (
+            board_x + end_col * cell_size + cell_size // 2,
+            board_y + end_row * cell_size + cell_size // 2
+        )
+    
+    def get_current_pos(self):
+        """Retourne la position actuelle du pion en mouvement"""
+        if not self.moving_pawn:
+            return None
+            
+        elapsed = time.time() - self.move_start_time
+        progress = min(elapsed / self.move_duration, 1.0)
+        progress = 1 - (1 - progress) ** 3  # Easing function
+        
+        current_x = self.start_pos[0] + (self.end_pos[0] - self.start_pos[0]) * progress
+        current_y = self.start_pos[1] + (self.end_pos[1] - self.start_pos[1]) * progress
+        
+        if progress >= 1.0 and not self.animation_finished:
+            self.animation_finished = True
+            # Ne pas réinitialiser moving_pawn ici, le faire dans une méthode séparée
+            
+        return (int(current_x), int(current_y))
+    
+    def is_moving(self):
+        """Vérifie si une animation est en cours"""
+        return self.moving_pawn is not None and not self.animation_finished
+    
+    def is_animation_finished(self):
+        """Vérifie si l'animation vient de se terminer"""
+        return self.animation_finished
+    
+    def complete_animation(self):
+        """Finalise l'animation (à appeler après avoir mis à jour la grille logique)"""
+        self.moving_pawn = None
+        self.moving_pawn_color = None
+        self.animation_finished = False
+
+    def has_pending_move(self):
+        """Vérifie s'il y a un mouvement en attente à exécuter"""
+        return self.pending_move is not None
+    
+    def execute_pending_move(self, pawn_grid, current_game_mode):
+        """Exécute le mouvement en attente et retourne les infos de victoire"""
+        if not self.pending_move:
+            return None, None, None
+            
+        from_pos = self.pending_move['from']
+        to_pos = self.pending_move['to']
+        
+        # Exécuter le mouvement dans la grille logique
+        pawn_grid[to_pos[0]][to_pos[1]] = pawn_grid[from_pos[0]][from_pos[1]]
+        pawn_grid[from_pos[0]][from_pos[1]] = 0
+        
+        # Vérifier la condition de victoire pour le mode Congress
+        winner = 0
+        connected_pawns = []
+        game_over = False
+        
+        if current_game_mode == 1:  # Si mode Congress
+            winner, connected_pawns = check_victory(pawn_grid)
+            if winner > 0:
+                game_over = True
+        
+        # Nettoyer le mouvement en attente
+        self.pending_move = None
+        
+        return winner, connected_pawns, game_over
 
 def create_game_board(quadrant_grid_data):
     """
@@ -215,15 +228,18 @@ def start_game(screen, quadrants_data):
     Lance le jeu avec les quadrants sélectionnés
     """
     pygame.display.set_caption("Partie en cours")
-    
+
     # Couleurs
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-    GRAY = (150, 150, 150)
-    BLUE = (0, 0, 250)
-    GREEN = (0, 200, 0)
-    DARK_BLUE = (0, 0, 150)   
-    DARK_RED = (200, 0, 0) 
+    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    background_image = pygame.image.load(os.path.join(script_dir, "img", "fond.png"))
+    WHITE = Colors.WHITE
+    BLACK = Colors.BLACK
+    GRAY = Colors.GRAY
+    BLUE = Colors.BLUE
+    RED = Colors.RED
+    GREEN = Colors.GREEN
+    DARK_BLUE = Colors.DARK_BLUE 
+    DARK_RED = Colors.DARK_RED
     
     # Chargement des images
     PATH = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -283,7 +299,6 @@ def start_game(screen, quadrants_data):
 
     # Font standard pour les boutons et textes
     font = pygame.font.Font(None, 24)
-    
     # Fonction pour retourner à l'écran précédent
     def return_to_previous():
         return
@@ -333,8 +348,8 @@ def start_game(screen, quadrants_data):
         # Boutons
         back_button = pygame.Rect(20, 20, 80, 30)
         
-        screen.fill(WHITE)
-        
+        background_scaled = pygame.transform.scale(background_image, screen.get_size())
+        screen.blit(background_scaled, (0, 0))        
         # Dessiner le contour du plateau
         if frame_image:
             # Redimensionner le cadre à la taille du plateau avec bordure
@@ -398,9 +413,11 @@ def start_game(screen, quadrants_data):
         mode_text = font.render(f"Mode: {mode_names[current_game_mode]}", True, BLACK)
         screen.blit(mode_text, (current_width - 200, 50))
 
-        # Dessiner le bouton retour
-        pygame.draw.rect(screen, BLUE, back_button)
-        back_text = font.render("Retour", True, WHITE)
+        # Dessiner le bouton retour Abandonner
+        text_width, text_height = font.size("Abandonner")
+        back_button = pygame.Rect(back_button.x, back_button.y, text_width + 20, text_height + 10)
+        pygame.draw.rect(screen, RED, back_button)
+        back_text = font.render("Abandonner", True, WHITE)
         back_text_rect = back_text.get_rect(center=back_button.center)
         screen.blit(back_text, back_text_rect)
         
@@ -471,4 +488,4 @@ def start_game(screen, quadrants_data):
                                 possible_moves = get_valid_moves(row, col, board_grid, pawn_grid)
                 
         pygame.display.flip()
-        clock.tick(144)
+        clock.tick(60)  # 60 FPS pour des animations fluides
