@@ -1,14 +1,12 @@
 import pygame
 from pawn import get_valid_moves
 
-
 CELL_SIZE = 60
 BOARD_SIZE = 8
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (100, 100, 255)
 RED = (255, 100, 100)
-
 
 def draw_board(screen, board):
     for row in range(BOARD_SIZE):
@@ -20,7 +18,6 @@ def draw_board(screen, board):
                 pygame.draw.circle(screen, RED, rect.center, CELL_SIZE // 3)
             elif board[row][col] == 2:
                 pygame.draw.circle(screen, BLUE, rect.center, CELL_SIZE // 3)
-
 
 def is_position_safe(pawn_grid, row, col, board_grid):
     if pawn_grid[row][col] != 0:
@@ -39,7 +36,6 @@ def is_position_safe(pawn_grid, row, col, board_grid):
     
     return True
 
-
 def place_pawn(pawn_grid, row, col, player, board_grid):
     if pawn_grid[row][col] != 0:
         return False  # Case déjà occupée
@@ -52,7 +48,6 @@ def place_pawn(pawn_grid, row, col, player, board_grid):
     pawn_grid[row][col] = player
     return True
 
-
 def get_all_safe_positions(pawn_grid, board_grid, player):
     safe_positions = []
     for r in range(8):
@@ -60,7 +55,6 @@ def get_all_safe_positions(pawn_grid, board_grid, player):
             if is_position_safe(pawn_grid, r, c, board_grid):
                 safe_positions.append((r, c))
     return safe_positions
-
 
 def check_isolation_victory(pawn_grid, current_player, board_grid):
     next_player = 2 if current_player == 1 else 1
@@ -72,14 +66,12 @@ def check_isolation_victory(pawn_grid, current_player, board_grid):
     
     return False, 0
 
-
 def highlight_safe_positions(screen, safe_positions, board_x, board_y, cell_size):
     for r, c in safe_positions:
         x = board_x + c * cell_size + cell_size // 2
         y = board_y + r * cell_size + cell_size // 2
         # Dessiner un cercle vert semi-transparent
         pygame.draw.circle(screen, (0, 255, 0), (x, y), cell_size // 6)
-
 
 def run_isolation(screen):
     clock = pygame.time.Clock()
@@ -91,6 +83,12 @@ def run_isolation(screen):
     while running:
         screen.fill((200, 200, 200))
         draw_board(screen, pawn_grid)
+        
+        # Afficher une croix sur les cases non valides pour le joueur actuel
+        for r in range(BOARD_SIZE):
+            for c in range(BOARD_SIZE):
+                if not is_position_safe(pawn_grid, r, c, board_grid):
+                    draw_cross(screen, r, c, CELL_SIZE)
         
         # Afficher les positions sûres pour le joueur actuel
         safe_positions = get_all_safe_positions(pawn_grid, board_grid, current_player)
@@ -118,7 +116,6 @@ def run_isolation(screen):
                             current_player = 2 if current_player == 1 else 1
 
         clock.tick(30)
-
 
 if __name__ == "__main__":
     pygame.init()

@@ -258,7 +258,32 @@ def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected
         
         pygame.draw.circle(screen, pawn_color, moving_pos, radius)
         pygame.draw.circle(screen, BLACK, moving_pos, radius, 2)
-
+def show_invalid_positions_isolation(screen, pawn_grid, board_grid, board_x, board_y, cell_size):
+    """
+    Affiche des croix sur les cases où il n'est pas possible de placer un pion
+    en utilisant directement les fonctions d'isolation.py
+    """
+    from isolation import is_position_safe
+    
+    for row in range(8):
+        for col in range(8):
+            # Si la case est vide mais pas sûre (pas possible d'y placer un pion)
+            if pawn_grid[row][col] == 0 and not is_position_safe(pawn_grid, row, col, board_grid):
+                # Dessiner une croix rouge
+                x = board_x + col * cell_size
+                y = board_y + row * cell_size
+                
+                # Marges pour la croix
+                margin = cell_size // 4
+                
+                # Dessiner la croix noir
+                pygame.draw.line(screen, (0, 0, 0), 
+                            (x + margin, y + margin), 
+                            (x + cell_size - margin, y + cell_size - margin), 8)
+                pygame.draw.line(screen, (0, 0, 0), 
+                            (x + cell_size - margin, y + margin), 
+                            (x + margin, y + cell_size - margin), 8)
+                
 def create_game_board(quadrant_grid_data):
     """
     Crée un plateau de jeu à partir des données de grille des 4 quadrants
@@ -498,6 +523,8 @@ def start_game(screen, quadrants_data):
         # Dessiner les pions avec animations
         draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation)
         
+        if current_game_mode == 2 and not game_over and not animation.is_moving():
+            show_invalid_positions_isolation(screen, pawn_grid, board_grid, board_x, board_y, cell_size)
         # Vérifier si l'animation est terminée et exécuter le mouvement en attente
         if not animation.is_moving() and animation.has_pending_move():
             winner_result, connected_result, game_over_result = animation.execute_pending_move(pawn_grid, current_game_mode)
@@ -521,18 +548,14 @@ def start_game(screen, quadrants_data):
             highlight_connected_pawns(screen, connected_pawns, board_x, board_y, cell_size, player_color)
             display_victory_message(screen, winner)
         
-        # POINT 6: Afficher le message de victoire pour Isolation (différentes conditions de fin selon le mode de jeu)
-        if game_over and winner > 0 and current_game_mode == 2:
-            victory_font = pygame.font.Font(None, 48)
-            victory_text = victory_font.render(f"Joueur {'Rouge' if winner == 1 else 'Bleu'} gagne!", True, DARK_RED if winner == 1 else DARK_BLUE)
-            victory_rect = victory_text.get_rect(center=(current_width // 2, current_height // 2 - 100))
-            
-            # Fond semi-transparent pour le message de victoire Isolation
-            overlay = pygame.Surface((current_width, current_height), pygame.SRCALPHA)
-            overlay.fill((255, 255, 255, 128))
-            screen.blit(overlay, (0, 0))
-            
-            screen.blit(victory_text, victory_rect)
+        # Mettre en surbrillance les pions connectés si le jeu est terminé en mode Congress
+        if game_over and winner > 0 and current_game_mode == 1:
+            player_color = DARK_RED if winner == 1 else DARK_BLUE
+            highlight_connected_pawns(screen, connected_pawns, board_x, board_y, cell_size, player_color)
+
+        # Afficher le message de victoire unifié pour tous les modes
+        if game_over and winner > 0:
+            display_victory_message(screen, winner)
         
         # Afficher le joueur actuel sauf si le jeu est terminé
         if not game_over:
