@@ -1,5 +1,6 @@
+from game_modes import GLOBAL_SELECTED_GAME
 import pygame
-from game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
+
 class Pawn:
     def __init__(self, row, col, color):
         self.row = row
@@ -7,24 +8,13 @@ class Pawn:
         self.color = color
         self.selected = False
 
-def get_current_game_mode():
-    """Récupère le mode de jeu actuel - SOLUTION SIMPLE avec refresh"""
-    import game_modes
-    # BUG FIX: Forcer la réimportation pour éviter le cache
-    import importlib
-    importlib.reload(game_modes)
-    return game_modes.GLOBAL_SELECTED_GAME
-    
 def get_valid_moves(row, col, board_grid, pawn_grid):
     """
     obtenir les mouvements valides d'un pion à une position donnée.
     """
-    
-    # CORRECTION SIMPLE : Import direct à chaque fois
-    current_game_mode = get_current_game_mode()
-    
+    print(f"DEBUG: GLOBAL_SELECTED_GAME = {GLOBAL_SELECTED_GAME}")  # Ligne de DEBUG à ajouter
     # Isolation: aucun déplacement
-    if current_game_mode == 2:
+    if GLOBAL_SELECTED_GAME == 2:
         return []
     
     # Vérifier s'il y a un pion à cette position
@@ -57,6 +47,9 @@ def get_valid_moves(row, col, board_grid, pawn_grid):
                 # Si la case contient un pion ennemi et que le mode est Katarenga
                 elif pawn_grid[r][c] != pawn_color and GLOBAL_SELECTED_GAME == 0:
                     possible_moves.append((r, c))
+                # isolationnn
+                elif pawn_grid[r][c] != pawn_color and GLOBAL_SELECTED_GAME == 2:
+                    possible_moves.append((0, 0))  # Retourne une position invalide pour indiquer que le mouvement n'est pas possible
     
     elif cell_color == 4:  # Rouge: déplacement en tour
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]

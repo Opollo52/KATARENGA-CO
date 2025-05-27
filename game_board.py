@@ -7,63 +7,117 @@ from assets.colors import Colors
 from pawn import get_valid_moves, highlight_possible_moves, is_valid_move
 from game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
 from congress import check_victory, highlight_connected_pawns
+from isolation import place_pawn, check_isolation_victory
 
 
-def get_current_game_mode():
-    """Récupère le mode de jeu actuel de manière sûre"""
-    from game_modes import GLOBAL_SELECTED_GAME
-    return GLOBAL_SELECTED_GAME
-
-# Classe simple pour les animations de pions
-def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation):
-    """Dessine les pions avec animations simples"""
-    DARK_RED = Colors.DARK_RED
-    DARK_BLUE = Colors.DARK_BLUE
-    BLACK = Colors.BLACK
+def get_valid_moves_with_mode(row, col, board_grid, pawn_grid, game_mode):
+    """
+    Version locale de get_valid_moves qui prend le mode en paramètre
+    """
+    # Isolation: aucun déplacement
+    if game_mode == 2:
+        return []
     
-    # Obtenir la position du pion en mouvement
-    moving_pos = animation.get_current_pos()
-    moving_pawn_info = animation.moving_pawn
+    # Vérifier s'il y a un pion à cette position
+    if pawn_grid[row][col] == 0:
+        return []
     
-    for row in range(8):
-        for col in range(8):
-            if pawn_grid[row][col] > 0:
-                # Skip le pion en mouvement à sa position D'ORIGINE (pas de destination)
-                if (moving_pawn_info and 
-                    moving_pawn_info[0] == row and moving_pawn_info[1] == col):
-                    continue
-                
-                pawn_color = DARK_RED if pawn_grid[row][col] == 1 else DARK_BLUE
-                
-                # Position normale du pion
-                pawn_center = (
-                    board_x + col * cell_size + cell_size // 2,
-                    board_y + row * cell_size + cell_size // 2
-                )
-                
-                # Rayon normal
-                radius = cell_size // 3
-                
-                # Cercle de sélection jaune si pion sélectionné
-                if selected_pawn and selected_pawn == (row, col):
-                    highlight_radius = radius + 4
-                    pygame.draw.circle(screen, (255, 255, 0), pawn_center, highlight_radius, 3)
-                
-                # Dessiner le pion
-                pygame.draw.circle(screen, pawn_color, pawn_center, radius)
-                pygame.draw.circle(screen, BLACK, pawn_center, radius, 2)
+    # Couleur du pion
+    pawn_color = pawn_grid[row][col]
     
-    # Dessiner le pion en mouvement par-dessus tout
-    if moving_pos and moving_pawn_info and animation.moving_pawn_color:
-        # Utiliser la couleur sauvegardée
-        pawn_color = DARK_RED if animation.moving_pawn_color == 1 else DARK_BLUE
-        radius = cell_size // 3
+    # Obtenir la couleur de la case où se trouve le pion
+    cell_color = board_grid[row][col]
+    
+    # Liste des mouvements possibles
+    possible_moves = []
+    
+    # Déplacement selon la couleur de la case
+    if cell_color == 3:  # Bleu: déplacement en roi 
+        directions = [
+            (-1, -1), (-1, 0), (-1, 1),
+            (0, -1),           (0, 1),
+            (1, -1),  (1, 0),  (1, 1)
+        ]
         
-        pygame.draw.circle(screen, pawn_color, moving_pos, radius)
-        pygame.draw.circle(screen, BLACK, moving_pos, radius, 2)
+        for move_row, move_column in directions:
+            r, c = row + move_row, col + move_column
+            if 0 <= r < 8 and 0 <= c < 8:
+                # Si la case est vide, toujours autorisé
+                if pawn_grid[r][c] == 0:
+                    possible_moves.append((r, c))
+                # Si la case contient un pion ennemi et que le mode est Katarenga
+                elif pawn_grid[r][c] != pawn_color and game_mode == 0:
+                    possible_moves.append((r, c))
+    
+    elif cell_color == 4:  # Rouge: déplacement en tour
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        
+        for move_row, move_column in directions:
+            r, c = row + move_row, col + move_column
+            # Continuer dans cette direction jusqu'à rencontrer un obstacle
+            while 0 <= r < 8 and 0 <= c < 8:
+                # Si la case est vide
+                if pawn_grid[r][c] == 0:
+                    possible_moves.append((r, c))
+                else:
+                    # Si la case contient un pion ennemi et que le mode autorise la capture (Katarenga)
+                    if pawn_grid[r][c] != pawn_color and game_mode == 0:
+                        possible_moves.append((r, c))
+                    break  # On ne peut pas aller plus loin
+                
+                # Si c'est aussi une case rouge, c'est la dernière case accessible
+                if board_grid[r][c] == 4:
+                    break
+                
+                # Avancer d'une case dans la même direction
+                r += move_row
+                c += move_column
+    
+    elif cell_color == 1:  # Jaune: déplacement en fou
+        directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+        
+        for move_row, move_column in directions:
+            r, c = row + move_row, col + move_column
+            # Continuer dans cette direction jusqu'à rencontrer un obstacle
+            while 0 <= r < 8 and 0 <= c < 8:
+                # Si la case est vide
+                if pawn_grid[r][c] == 0:
+                    possible_moves.append((r, c))
+                else:
+                    # Si la case contient un pion ennemi et que le mode est Katarenga
+                    if pawn_grid[r][c] != pawn_color and game_mode == 0:
+                        possible_moves.append((r, c))
+                    break # On ne peut pas aller plus loin
+                
+                # Si c'est aussi une case jaune, c'est la dernière case accessible
+                if board_grid[r][c] == 1:  # Jaune
+                    break
+                
+                # Avancer d'une case dans la même direction
+                r += move_row
+                c += move_column
+    
+    elif cell_color == 2:  # Vert: déplacement en cavalier
+        knight_moves = [
+            (-2, -1), (-2, 1),
+            (-1, -2), (-1, 2),
+            (1, -2),  (1, 2),
+            (2, -1),  (2, 1)
+        ]
+        
+        for move_row, move_column in knight_moves:
+            r, c = row + move_row, col + move_column
+            if 0 <= r < 8 and 0 <= c < 8:
+                # Si la case est vide
+                if pawn_grid[r][c] == 0:
+                    possible_moves.append((r, c))
+                # Si la case contient un pion ennemi et que le mode est Katarenga
+                elif pawn_grid[r][c] != pawn_color and game_mode == 0:
+                    possible_moves.append((r, c))
+    
+    return possible_moves
 
-
-# Version améliorée de get_current_pos pour une meilleure gestion
+# Version améliorée de la classe Animation
 class Animation:
     def __init__(self):
         self.moving_pawn = None
@@ -73,7 +127,7 @@ class Animation:
         self.end_pos = None
         self.moving_pawn_color = None  
         self.pending_move = None
-        self.animation_finished = False  # Nouveau flag
+        self.animation_finished = False  # Flag pour une meilleure gestion
         
     def start_move(self, start_row, start_col, end_row, end_col, board_x, board_y, cell_size, pawn_color):
         """Démarre une animation de déplacement"""
@@ -140,7 +194,7 @@ class Animation:
         pawn_grid[to_pos[0]][to_pos[1]] = pawn_grid[from_pos[0]][from_pos[1]]
         pawn_grid[from_pos[0]][from_pos[1]] = 0
         
-        # Vérifier la condition de victoire pour le mode Congress
+        # Vérifier la condition de victoire selon le mode de jeu
         winner = 0
         connected_pawns = []
         game_over = False
@@ -149,11 +203,61 @@ class Animation:
             winner, connected_pawns = check_victory(pawn_grid)
             if winner > 0:
                 game_over = True
+        elif current_game_mode == 2:  # Si mode Isolation
+            # Pour Isolation, vérifier la victoire après chaque mouvement
+            game_over, winner = check_isolation_victory(pawn_grid, self.pending_move['pawn_color'], None)
         
         # Nettoyer le mouvement en attente
         self.pending_move = None
         
         return winner, connected_pawns, game_over
+
+def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation):
+    """Dessine les pions avec animations simples"""
+    DARK_RED = Colors.DARK_RED
+    DARK_BLUE = Colors.DARK_BLUE
+    BLACK = Colors.BLACK
+    
+    # Obtenir la position du pion en mouvement
+    moving_pos = animation.get_current_pos()
+    moving_pawn_info = animation.moving_pawn
+    
+    for row in range(8):
+        for col in range(8):
+            if pawn_grid[row][col] > 0:
+                # Skip le pion en mouvement à sa position D'ORIGINE (pas de destination)
+                if (moving_pawn_info and 
+                    moving_pawn_info[0] == row and moving_pawn_info[1] == col):
+                    continue
+                
+                pawn_color = DARK_RED if pawn_grid[row][col] == 1 else DARK_BLUE
+                
+                # Position normale du pion
+                pawn_center = (
+                    board_x + col * cell_size + cell_size // 2,
+                    board_y + row * cell_size + cell_size // 2
+                )
+                
+                # Rayon normal
+                radius = cell_size // 3
+                
+                # Cercle de sélection jaune si pion sélectionné
+                if selected_pawn and selected_pawn == (row, col):
+                    highlight_radius = radius + 4
+                    pygame.draw.circle(screen, (255, 255, 0), pawn_center, highlight_radius, 3)
+                
+                # Dessiner le pion
+                pygame.draw.circle(screen, pawn_color, pawn_center, radius)
+                pygame.draw.circle(screen, BLACK, pawn_center, radius, 2)
+    
+    # Dessiner le pion en mouvement par-dessus tout
+    if moving_pos and moving_pawn_info and animation.moving_pawn_color:
+        # Utiliser la couleur sauvegardée
+        pawn_color = DARK_RED if animation.moving_pawn_color == 1 else DARK_BLUE
+        radius = cell_size // 3
+        
+        pygame.draw.circle(screen, pawn_color, moving_pos, radius)
+        pygame.draw.circle(screen, BLACK, moving_pos, radius, 2)
 
 def create_game_board(quadrant_grid_data):
     """
@@ -227,7 +331,9 @@ def initialize_pawns_for_game_mode(game_mode):
             pawn_grid[row][col] = 2
     
     elif game_mode == 2:  # Isolation
+        # Plateau vide au début pour le mode Isolation
         pass
+    
     return pawn_grid
 
 def start_game(screen, quadrants_data):
@@ -249,7 +355,7 @@ def start_game(screen, quadrants_data):
     DARK_BLUE = Colors.DARK_BLUE 
     DARK_RED = Colors.DARK_RED
     
-    # Chargement des images
+    # Chargement des images (garder le chemin original avec assets)
     PATH = os.path.dirname(os.path.abspath(sys.argv[0]))
     
     # Dictionnaire des valeurs de cellule aux images
@@ -288,9 +394,9 @@ def start_game(screen, quadrants_data):
     # Initialiser la phase de jeu
     game_phase = "play"
     
-    # Fonction pour réinitialiser le plateau selon le mode de jeu actuel
+    # POINT 2: Fonction pour réinitialiser le plateau selon le mode de jeu actuel
     def reset_game_for_mode():
-        nonlocal current_player, selected_pawn, possible_moves, game_over, game_phase, winner, connected_pawns
+        nonlocal current_player, selected_pawn, possible_moves, game_over, game_phase, winner, connected_pawns, current_game_mode
 
         current_game_mode = GLOBAL_SELECTED_GAME
 
@@ -304,12 +410,13 @@ def start_game(screen, quadrants_data):
         game_over = False
         winner = 0
         connected_pawns = []
+        game_phase = "play"
 
-        # Si tu n'utilises pas de pions à placer, retourne None pour le 3e élément
-        return current_game_mode, new_pawn_grid, None
+        return new_pawn_grid
         
     # Font standard pour les boutons et textes
     font = pygame.font.Font(None, 24)
+    
     # Fonction pour retourner à l'écran précédent
     def return_to_previous():
         return
@@ -322,8 +429,12 @@ def start_game(screen, quadrants_data):
     
     running = True
     while running:
-        # Vérifier si le mode de jeu a changé
+        # POINT 2: Vérifier si le mode de jeu a changé (gestion automatique du changement de mode de jeu)
         from game_modes import GLOBAL_SELECTED_GAME
+        if GLOBAL_SELECTED_GAME != last_known_game_mode:
+            current_game_mode = GLOBAL_SELECTED_GAME
+            pawn_grid = reset_game_for_mode()
+            last_known_game_mode = current_game_mode
         
         # Récupérer les dimensions actuelles de la fenêtre
         current_width, current_height = screen.get_size()
@@ -355,6 +466,7 @@ def start_game(screen, quadrants_data):
         
         background_scaled = pygame.transform.scale(background_image, screen.get_size())
         screen.blit(background_scaled, (0, 0))        
+        
         # Dessiner le contour du plateau
         if frame_image:
             # Redimensionner le cadre à la taille du plateau avec bordure
@@ -398,8 +510,9 @@ def start_game(screen, quadrants_data):
             if not game_over:
                 current_player = 3 - current_player  # Alterné entre 1 et 2
         
-        # Dessiner les mouvements possibles
-        if selected_pawn and possible_moves and not game_over and not animation.is_moving():
+        # Dessiner les mouvements possibles (seulement pour Katarenga et Congress)
+        if (selected_pawn and possible_moves and not game_over and 
+            not animation.is_moving() and current_game_mode in [0, 1]):
             highlight_possible_moves(screen, possible_moves, board_x, board_y, cell_size)
         
         # Mettre en surbrillance les pions connectés si le jeu est terminé en mode Congress
@@ -407,6 +520,19 @@ def start_game(screen, quadrants_data):
             player_color = DARK_RED if winner == 1 else DARK_BLUE
             highlight_connected_pawns(screen, connected_pawns, board_x, board_y, cell_size, player_color)
             display_victory_message(screen, winner)
+        
+        # POINT 6: Afficher le message de victoire pour Isolation (différentes conditions de fin selon le mode de jeu)
+        if game_over and winner > 0 and current_game_mode == 2:
+            victory_font = pygame.font.Font(None, 48)
+            victory_text = victory_font.render(f"Joueur {'Rouge' if winner == 1 else 'Bleu'} gagne!", True, DARK_RED if winner == 1 else DARK_BLUE)
+            victory_rect = victory_text.get_rect(center=(current_width // 2, current_height // 2 - 100))
+            
+            # Fond semi-transparent pour le message de victoire Isolation
+            overlay = pygame.Surface((current_width, current_height), pygame.SRCALPHA)
+            overlay.fill((255, 255, 255, 128))
+            screen.blit(overlay, (0, 0))
+            
+            screen.blit(victory_text, victory_rect)
         
         # Afficher le joueur actuel sauf si le jeu est terminé
         if not game_over:
@@ -426,15 +552,16 @@ def start_game(screen, quadrants_data):
         back_text_rect = back_text.get_rect(center=back_button.center)
         screen.blit(back_text, back_text_rect)
         
-        # Traitement des événements
+        # Traitement de l'IA (conserver de game_board.py)
         if (
             not game_over
             and current_player == 2
             and not animation.is_moving()
             and not animation.has_pending_move()
             and GLOBAL_SELECTED_OPPONENT == 0
+            and current_game_mode in [0, 1]  # IA seulement pour Katarenga et Congress
         ):
-            ai_move = randomAi(pawn_grid, board_grid, 2)
+            ai_move = randomAi(pawn_grid, board_grid, 2, current_game_mode)
             if ai_move:
                 from_row, from_col, (to_row, to_col) = ai_move
                 animation.start_move(from_row, from_col, to_row, to_col, board_x, board_y, cell_size, pawn_grid[from_row][from_col])
@@ -460,53 +587,63 @@ def start_game(screen, quadrants_data):
                     return_to_previous()
                     return
                 
-                # clic sur le plateau
-                mouse_x, mouse_y = event.pos
-                # Si le clic est dans les limites du plateau
-                if (board_x <= mouse_x < board_x + board_size and 
-                    board_y <= mouse_y < board_y + board_size):
-                    # Convertir les coordonnées du clic en indices de la grille
-                    col = (mouse_x - board_x) // cell_size
-                    row = (mouse_y - board_y) // cell_size
-                    
-                    if game_phase == "play":
-                        # Si un pion est déjà sélectionné
-                        if selected_pawn:
-                            selected_row, selected_col = selected_pawn
-                            
-                            # Vérifier si le clic est sur l'un des mouvements possibles
-                            if (row, col) in possible_moves:
-                                # Démarrer l'animation AVEC la couleur du pion
-                                animation.start_move(selected_row, selected_col, row, col, board_x, board_y, cell_size, pawn_grid[selected_row][selected_col])
-                                
-                                # Stocker le mouvement pour l'exécuter après l'animation
-                                animation.pending_move = {
-                                    'from': (selected_row, selected_col),
-                                    'to': (row, col),
-                                    'pawn_color': pawn_grid[selected_row][selected_col]
-                                }
-                                
-                                # Réinitialiser la sélection immédiatement
-                                selected_pawn = None
-                                possible_moves = []
-                            
-                            # Si le clic est sur un autre pion du même joueur
-                            elif pawn_grid[row][col] == current_player:
-                                # Sélectionner ce nouveau pion
-                                selected_pawn = (row, col)
-                                possible_moves = get_valid_moves(row, col, board_grid, pawn_grid)
-                            
-                            # Si le clic est ailleurs, annuler la sélection
-                            else:
-                                selected_pawn = None
-                                possible_moves = []
+                # clic sur le plateau (seulement si le jeu n'est pas terminé et aucune animation)
+                if not game_over and not animation.is_moving():
+                    mouse_x, mouse_y = event.pos
+                    # Si le clic est dans les limites du plateau
+                    if (board_x <= mouse_x < board_x + board_size and 
+                        board_y <= mouse_y < board_y + board_size):
+                        # Convertir les coordonnées du clic en indices de la grille
+                        col = (mouse_x - board_x) // cell_size
+                        row = (mouse_y - board_y) // cell_size
                         
-                        # Si aucun pion n'est sélectionné
-                        else:
-                            # Vérifier si le clic est sur un pion du joueur actuel
-                            if pawn_grid[row][col] == current_player:
-                                selected_pawn = (row, col)
-                                possible_moves = get_valid_moves(row, col, board_grid, pawn_grid)
+                        # POINT 1: Support complet du mode Isolation avec la logique de placement de pions
+                        if current_game_mode == 2:  # Mode Isolation
+                            if place_pawn(pawn_grid, row, col, current_player, board_grid):
+                                game_over, winner = check_isolation_victory(pawn_grid, current_player, board_grid)                            
+                                if not game_over:
+                                    # Passer au joueur suivant
+                                    current_player = 2 if current_player == 1 else 1
+                        
+                        elif current_game_mode in [0, 1]:  # Katarenga ou Congress
+                            if game_phase == "play":
+                                # Si un pion est déjà sélectionné
+                                if selected_pawn:
+                                    selected_row, selected_col = selected_pawn
+                                    
+                                    # Vérifier si le clic est sur l'un des mouvements possibles
+                                    if (row, col) in possible_moves:
+                                        # Démarrer l'animation AVEC la couleur du pion
+                                        animation.start_move(selected_row, selected_col, row, col, board_x, board_y, cell_size, pawn_grid[selected_row][selected_col])
+                                        
+                                        # Stocker le mouvement pour l'exécuter après l'animation
+                                        animation.pending_move = {
+                                            'from': (selected_row, selected_col),
+                                            'to': (row, col),
+                                            'pawn_color': pawn_grid[selected_row][selected_col]
+                                        }
+                                        
+                                        # Réinitialiser la sélection immédiatement
+                                        selected_pawn = None
+                                        possible_moves = []
+                                    
+                                    # Si le clic est sur un autre pion du même joueur
+                                    elif pawn_grid[row][col] == current_player:
+                                        # Sélectionner ce nouveau pion
+                                        selected_pawn = (row, col)
+                                        possible_moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, current_game_mode)
+                                    
+                                    # Si le clic est ailleurs, annuler la sélection
+                                    else:
+                                        selected_pawn = None
+                                        possible_moves = []
+                                
+                                # Si aucun pion n'est sélectionné
+                                else:
+                                    # Vérifier si le clic est sur un pion du joueur actuel
+                                    if pawn_grid[row][col] == current_player:
+                                        selected_pawn = (row, col)
+                                        possible_moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, current_game_mode)
                 
         pygame.display.flip()
         clock.tick(60)  # 60 FPS pour des animations fluides
@@ -523,7 +660,10 @@ def display_victory_message(screen, winner):
     # Police
     font = pygame.font.Font(None, 48)
     
-    message = f"Victoire du joueur {'Rouge' if winner == 1 else 'Bleu'} !"
+    if winner == 0:
+        message = "Partie abandonnée"
+    else:
+        message = f"Victoire du joueur {'Rouge' if winner == 1 else 'Bleu'} !"
     
     # Créer la surface du texte
     text = font.render(message, True, text_color)
@@ -548,9 +688,10 @@ def display_victory_message(screen, winner):
     screen.blit(text, text_rect)
     
 
-def randomAi(pawn_grid, board_grid, current_player):
+def randomAi(pawn_grid, board_grid, current_player, game_mode):
     """
     IA simple qui choisit un mouvement aléatoire parmi les mouvements possibles.
+    Version mise à jour qui prend le mode de jeu en paramètre.
     """
     possible_moves = []
     
@@ -558,7 +699,7 @@ def randomAi(pawn_grid, board_grid, current_player):
     for row in range(8):
         for col in range(8):
             if pawn_grid[row][col] == current_player:
-                moves = get_valid_moves(row, col, board_grid, pawn_grid)
+                moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, game_mode)
                 possible_moves.extend([(row, col, move) for move in moves])
     
     # Si aucun mouvement possible, retourner None
@@ -568,4 +709,4 @@ def randomAi(pawn_grid, board_grid, current_player):
     # Choisir un mouvement aléatoire
     chosen_move = random.choice(possible_moves)
     
-    return chosen_move  # Retourne (from_row, from_col, to_row, to_col)
+    return chosen_move  # Retourne (from_row, from_col, (to_row, to_col))
