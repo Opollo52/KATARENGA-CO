@@ -2,15 +2,18 @@ import pygame
 import os
 import sys
 import time
+import random
 from assets.colors import Colors
 from pawn import get_valid_moves, highlight_possible_moves, is_valid_move
 from game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
-from congress import check_victory, highlight_connected_pawns, display_victory_message
+from congress import check_victory, highlight_connected_pawns
+
 
 def get_current_game_mode():
     """Récupère le mode de jeu actuel de manière sûre"""
     from game_modes import GLOBAL_SELECTED_GAME
     return GLOBAL_SELECTED_GAME
+
 # Classe simple pour les animations de pions
 def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation):
     """Dessine les pions avec animations simples"""
@@ -288,12 +291,12 @@ def start_game(screen, quadrants_data):
     # Fonction pour réinitialiser le plateau selon le mode de jeu actuel
     def reset_game_for_mode():
         nonlocal current_player, selected_pawn, possible_moves, game_over, game_phase, winner, connected_pawns
-        
+
         current_game_mode = GLOBAL_SELECTED_GAME
-        
+
         # Initialiser les pions selon le mode de jeu
         new_pawn_grid = initialize_pawns_for_game_mode(current_game_mode)
-        
+
         # Réinitialiser les variables de jeu
         selected_pawn = None
         possible_moves = []
@@ -302,6 +305,9 @@ def start_game(screen, quadrants_data):
         winner = 0
         connected_pawns = []
 
+        # Si tu n'utilises pas de pions à placer, retourne None pour le 3e élément
+        return current_game_mode, new_pawn_grid, None
+        
     # Font standard pour les boutons et textes
     font = pygame.font.Font(None, 24)
     # Fonction pour retourner à l'écran précédent
@@ -318,12 +324,6 @@ def start_game(screen, quadrants_data):
     while running:
         # Vérifier si le mode de jeu a changé
         from game_modes import GLOBAL_SELECTED_GAME
-        if GLOBAL_SELECTED_GAME != last_known_game_mode:
-            current_game_mode, new_pawn_grid, new_pions_a_placer = reset_game_for_mode()
-            pawn_grid = new_pawn_grid
-            if new_pions_a_placer:
-                pions_a_placer = new_pions_a_placer
-            last_known_game_mode = current_game_mode
         
         # Récupérer les dimensions actuelles de la fenêtre
         current_width, current_height = screen.get_size()
@@ -427,6 +427,25 @@ def start_game(screen, quadrants_data):
         screen.blit(back_text, back_text_rect)
         
         # Traitement des événements
+        if (
+            not game_over
+            and current_player == 2
+            and not animation.is_moving()
+            and not animation.has_pending_move()
+            and GLOBAL_SELECTED_OPPONENT == 0
+        ):
+            ai_move = randomAi(pawn_grid, board_grid, 2)
+            if ai_move:
+                from_row, from_col, (to_row, to_col) = ai_move
+                animation.start_move(from_row, from_col, to_row, to_col, board_x, board_y, cell_size, pawn_grid[from_row][from_col])
+                animation.pending_move = {
+                    'from': (from_row, from_col),
+                    'to': (to_row, to_col),
+                    'pawn_color': pawn_grid[from_row][from_col]
+                }
+                selected_pawn = None
+                possible_moves = []
+                
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return_to_previous()
@@ -435,7 +454,7 @@ def start_game(screen, quadrants_data):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # Quitter bouton abandonner
                 if back_button.collidepoint(event.pos):
-                    display_victory_message(screen, "Abandon - Retour au menu")
+                    display_victory_message(screen, 0)
                     pygame.display.flip()
                     pygame.time.delay(2000)
                     return_to_previous()
@@ -527,3 +546,26 @@ def display_victory_message(screen, winner):
     
     # Dessiner le texte
     screen.blit(text, text_rect)
+    
+
+def randomAi(pawn_grid, board_grid, current_player):
+    """
+    IA simple qui choisit un mouvement aléatoire parmi les mouvements possibles.
+    """
+    possible_moves = []
+    
+    # Trouver tous les pions du joueur actuel
+    for row in range(8):
+        for col in range(8):
+            if pawn_grid[row][col] == current_player:
+                moves = get_valid_moves(row, col, board_grid, pawn_grid)
+                possible_moves.extend([(row, col, move) for move in moves])
+    
+    # Si aucun mouvement possible, retourner None
+    if not possible_moves:
+        return None
+    
+    # Choisir un mouvement aléatoire
+    chosen_move = random.choice(possible_moves)
+    
+    return chosen_move  # Retourne (from_row, from_col, to_row, to_col)

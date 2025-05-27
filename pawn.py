@@ -1,20 +1,30 @@
-from game_modes import GLOBAL_SELECTED_GAME
 import pygame
-
+from game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
 class Pawn:
     def __init__(self, row, col, color):
         self.row = row
         self.col = col
         self.color = color
         self.selected = False
+
+def get_current_game_mode():
+    """Récupère le mode de jeu actuel - SOLUTION SIMPLE avec refresh"""
+    import game_modes
+    # BUG FIX: Forcer la réimportation pour éviter le cache
+    import importlib
+    importlib.reload(game_modes)
+    return game_modes.GLOBAL_SELECTED_GAME
     
 def get_valid_moves(row, col, board_grid, pawn_grid):
     """
     obtenir les mouvements valides d'un pion à une position donnée.
     """
     
+    # CORRECTION SIMPLE : Import direct à chaque fois
+    current_game_mode = get_current_game_mode()
+    
     # Isolation: aucun déplacement
-    if GLOBAL_SELECTED_GAME == 2:
+    if current_game_mode == 2:
         return []
     
     # Vérifier s'il y a un pion à cette position

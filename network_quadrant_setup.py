@@ -1,5 +1,4 @@
 import pygame
-import json
 import os
 import sys
 from quadrant_viewer import load_quadrants
@@ -8,8 +7,6 @@ from assets.colors import Colors
 def show_network_quadrant_setup(screen, network_manager, is_server):
     """
     Interface pour que chaque joueur configure SES quadrants
-    - Serveur (Rouge) : Quadrants 1 et 2 (haut)
-    - Client (Bleu) : Quadrants 3 et 4 (bas)
     """
     
     WIDTH, HEIGHT = screen.get_width(), screen.get_height()
@@ -70,8 +67,8 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
     # Positions des slots de prévisualisation
     preview_slots = []
     for i in range(2):
-        x = preview_area.left + i * (preview_size + spacing)
-        y = preview_area.top + 50
+        x = preview_area.left + i  * (preview_size + spacing) + 600
+        y = preview_area.top + 150
         slot = pygame.Rect(x, y, preview_size, preview_size)
         preview_slots.append(slot)
     
@@ -129,35 +126,45 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
         return rects, total_height
     
     def draw_preview_slot(slot_rect, quadrant_id, rotation, slot_index, highlighted=False):
-        """Dessine un slot de prévisualisation"""
+        """Dessine un slot de prévisualisation avec fond blanc sous le label"""
         border_color = HIGHLIGHT if highlighted else player_color
-        
+
+        # Dessin du slot
         pygame.draw.rect(screen, LIGHT_GRAY, slot_rect)
         pygame.draw.rect(screen, border_color, slot_rect, 3 if highlighted else 2)
-        
-        # Label du slot
+
+        # Label du slot avec fond blanc
         label_text = quadrant_positions[slot_index]
         label_surface = instruction_font.render(label_text, True, BLACK)
         label_rect = label_surface.get_rect(centerx=slot_rect.centerx, bottom=slot_rect.top - 5)
+
+        # Fond blanc sous le label
+        padding = 6
+        bg_rect = pygame.Rect(
+            label_rect.left - padding,
+            label_rect.top - padding,
+            label_rect.width + 2 * padding,
+            label_rect.height + 2 * padding
+        )
+        pygame.draw.rect(screen, WHITE, bg_rect)
         screen.blit(label_surface, label_rect)
-        
+
+        # Affichage de l'image du quadrant si présente
         if quadrant_id and quadrant_id in quadrant_images:
             img = quadrant_images[quadrant_id]
-            
-            # Appliquer la rotation
+            # Appliquer la rotation si besoin
             if rotation != 0:
                 img = get_rotated_image(img, rotation)
-            
             thumbnail = pygame.transform.scale(img, (slot_rect.width - 10, slot_rect.height - 10))
             img_rect = thumbnail.get_rect(center=slot_rect.center)
             screen.blit(thumbnail, img_rect.topleft)
-            
+
             # Numéro de quadrant
             q_num = quadrant_id.split('_')[1]
             num_font = pygame.font.Font(None, 20)
             num_text = num_font.render(q_num, True, BLACK)
             screen.blit(num_text, (slot_rect.right - num_text.get_width() - 5, slot_rect.bottom - num_text.get_height() - 5))
-            
+
             # Indicateur de rotation
             if rotation != 0:
                 rot_text = num_font.render(f"{rotation}°", True, (200, 0, 0))
@@ -165,9 +172,10 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
                 pygame.draw.rect(screen, (255, 255, 200), rot_rect)
                 pygame.draw.rect(screen, (150, 0, 0), rot_rect, 1)
                 screen.blit(rot_text, (slot_rect.left + 8, slot_rect.bottom - rot_text.get_height() - 8))
-    
     def apply_rotation_to_grid(grid, rotation):
-        """Applique une rotation à une grille"""
+        """
+        Applique une rotation à une grille
+        """
         rotated_grid = [row.copy() for row in grid]
         num_rotations = rotation // 90
         for _ in range(num_rotations):
@@ -239,9 +247,6 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
         instruction = instruction_font.render("Configurez vos 2 quadrants • Double-clic pour tourner • Clic droit pour retirer", True, BLACK)
         instruction_rect = instruction.get_rect(center=(WIDTH // 2, 90))
         screen.blit(instruction, instruction_rect)
-        
-        # Zone de prévisualisation
-        pygame.draw.rect(screen, WHITE, preview_area, 2)
         
         # Déterminer le slot survolé
         hovered_slot = -1
@@ -444,7 +449,9 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
     return None
 
 def build_final_board_config(my_quadrants, my_rotations, opponent_config, is_server):
-    """Construit la configuration finale du plateau"""
+    """
+    Construit la configuration finale du plateau
+    """
     
     def apply_rotation_to_grid(grid, rotation):
         rotated_grid = [row.copy() for row in grid]
@@ -452,7 +459,7 @@ def build_final_board_config(my_quadrants, my_rotations, opponent_config, is_ser
         for _ in range(num_rotations):
             rows = len(rotated_grid)
             cols = len(rotated_grid[0])
-            new_grid = [[0 for _ in range(rows)] for _ in range(cols)]
+            new_grid = [[0 for i in range(rows)] for j in range(cols)]
             for i in range(rows):
                 for j in range(cols):
                     new_grid[j][rows - 1 - i] = rotated_grid[i][j]

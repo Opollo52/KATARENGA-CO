@@ -7,11 +7,6 @@ from game_board import create_game_board, initialize_pawns_for_game_mode, Animat
 from pawn import get_valid_moves, highlight_possible_moves
 from congress import check_victory, highlight_connected_pawns, display_victory_message
 
-def get_current_game_mode():
-    """Récupère le mode de jeu actuel"""
-    import game_modes
-    return game_modes.GLOBAL_SELECTED_GAME
-
 def start_network_game(screen, network_manager):
     """
     Lance le jeu en réseau avec configuration des quadrants par joueur
@@ -44,19 +39,43 @@ def start_network_game(screen, network_manager):
     
     frame_image = pygame.image.load(os.path.join(PATH, "assets", "img", "frame.png"))
     
-    # Obtenir le mode de jeu actuel
-    current_game_mode = get_current_game_mode()
-    print(f"Mode de jeu sélectionné: {current_game_mode}")
+    # SYNCHRONISATION DU MODE DE JEU
+    import game_modes
+    local_game_mode = game_modes.GLOBAL_SELECTED_GAME
     
-    # Définir les rôles des joueurs
     if network_manager.is_server:
-        print("Serveur : Configuration des quadrants du haut...")
+        print(f"Serveur : Envoi du mode de jeu {local_game_mode}")
+        # L'hôte envoie son mode de jeu au client
+        network_manager.send_message("game_mode", {"mode": local_game_mode})
+        current_game_mode = local_game_mode
         my_player = 1
         opponent_player = 2
     else:
-        print("Client : Configuration des quadrants du bas...")
+        print("Client : En attente du mode de jeu du serveur...")
+        # Le client attend de recevoir le mode de jeu du serveur
+        mode_received = False
+        timeout = time.time() + 10  # Timeout de 10 secondes
+        
+        while not mode_received and time.time() < timeout:
+            messages = network_manager.get_messages()
+            for message in messages:
+                if message['type'] == 'game_mode':
+                    current_game_mode = message['data']['mode']
+                    print(f"Client : Mode de jeu reçu du serveur : {current_game_mode}")
+                    mode_received = True
+                    break
+            
+            if not mode_received:
+                pygame.time.wait(100)  # Attendre un peu avant de vérifier à nouveau
+        
+        if not mode_received:
+            print("ERREUR : Impossible de recevoir le mode de jeu du serveur")
+            return
+            
         my_player = 2
         opponent_player = 1
+    
+    print(f"Mode de jeu synchronisé: {current_game_mode}")
     
     # Lancer la configuration des quadrants par chaque joueur
     from network_quadrant_setup import show_network_quadrant_setup
@@ -335,7 +354,8 @@ def start_network_game(screen, network_manager):
                             # Sélectionner un autre pion du même joueur
                             elif pawn_grid[row][col] == my_player:
                                 selected_pawn = (row, col)
-                                possible_moves = get_valid_moves(row, col, board_grid, pawn_grid)
+                                # CORRECTION: Utiliser le mode synchronisé
+                                possible_moves = get_valid_moves(row, col, board_grid, pawn_grid, current_game_mode)
                             
                             # Annuler la sélection
                             else:
@@ -346,7 +366,8 @@ def start_network_game(screen, network_manager):
                         else:
                             if pawn_grid[row][col] == my_player:
                                 selected_pawn = (row, col)
-                                possible_moves = get_valid_moves(row, col, board_grid, pawn_grid)
+                                # CORRECTION: Utiliser le mode synchronisé
+                                possible_moves = get_valid_moves(row, col, board_grid, pawn_grid, current_game_mode)
         
         # Vérifier si la connexion est toujours active
         if not network_manager.is_connected and not game_over:
