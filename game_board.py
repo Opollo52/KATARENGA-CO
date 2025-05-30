@@ -8,114 +8,15 @@ from pawn import get_valid_moves, highlight_possible_moves, is_valid_move
 from game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
 from congress import check_victory, highlight_connected_pawns
 from isolation import place_pawn, check_isolation_victory
+from katarenga import check_minimum_pawn_victory_condition
 
 
 def get_valid_moves_with_mode(row, col, board_grid, pawn_grid, game_mode):
     """
-    Version locale de get_valid_moves qui prend le mode en paramètre
+    Version locale de get_valid_moves qui utilise maintenant pawn.py pour tout
     """
-    # Isolation: aucun déplacement
-    if game_mode == 2:
-        return []
-    
-    # Vérifier s'il y a un pion à cette position
-    if pawn_grid[row][col] == 0:
-        return []
-    
-    # Couleur du pion
-    pawn_color = pawn_grid[row][col]
-    
-    # Obtenir la couleur de la case où se trouve le pion
-    cell_color = board_grid[row][col]
-    
-    # Liste des mouvements possibles
-    possible_moves = []
-    
-    # Déplacement selon la couleur de la case
-    if cell_color == 3:  # Bleu: déplacement en roi 
-        directions = [
-            (-1, -1), (-1, 0), (-1, 1),
-            (0, -1),           (0, 1),
-            (1, -1),  (1, 0),  (1, 1)
-        ]
-        
-        for move_row, move_column in directions:
-            r, c = row + move_row, col + move_column
-            if 0 <= r < 8 and 0 <= c < 8:
-                # Si la case est vide, toujours autorisé
-                if pawn_grid[r][c] == 0:
-                    possible_moves.append((r, c))
-                # Si la case contient un pion ennemi et que le mode est Katarenga
-                elif pawn_grid[r][c] != pawn_color and game_mode == 0:
-                    possible_moves.append((r, c))
-    
-    elif cell_color == 4:  # Rouge: déplacement en tour
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        
-        for move_row, move_column in directions:
-            r, c = row + move_row, col + move_column
-            # Continuer dans cette direction jusqu'à rencontrer un obstacle
-            while 0 <= r < 8 and 0 <= c < 8:
-                # Si la case est vide
-                if pawn_grid[r][c] == 0:
-                    possible_moves.append((r, c))
-                else:
-                    # Si la case contient un pion ennemi et que le mode autorise la capture (Katarenga)
-                    if pawn_grid[r][c] != pawn_color and game_mode == 0:
-                        possible_moves.append((r, c))
-                    break  # On ne peut pas aller plus loin
-                
-                # Si c'est aussi une case rouge, c'est la dernière case accessible
-                if board_grid[r][c] == 4:
-                    break
-                
-                # Avancer d'une case dans la même direction
-                r += move_row
-                c += move_column
-    
-    elif cell_color == 1:  # Jaune: déplacement en fou
-        directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
-        
-        for move_row, move_column in directions:
-            r, c = row + move_row, col + move_column
-            # Continuer dans cette direction jusqu'à rencontrer un obstacle
-            while 0 <= r < 8 and 0 <= c < 8:
-                # Si la case est vide
-                if pawn_grid[r][c] == 0:
-                    possible_moves.append((r, c))
-                else:
-                    # Si la case contient un pion ennemi et que le mode est Katarenga
-                    if pawn_grid[r][c] != pawn_color and game_mode == 0:
-                        possible_moves.append((r, c))
-                    break # On ne peut pas aller plus loin
-                
-                # Si c'est aussi une case jaune, c'est la dernière case accessible
-                if board_grid[r][c] == 1:  # Jaune
-                    break
-                
-                # Avancer d'une case dans la même direction
-                r += move_row
-                c += move_column
-    
-    elif cell_color == 2:  # Vert: déplacement en cavalier
-        knight_moves = [
-            (-2, -1), (-2, 1),
-            (-1, -2), (-1, 2),
-            (1, -2),  (1, 2),
-            (2, -1),  (2, 1)
-        ]
-        
-        for move_row, move_column in knight_moves:
-            r, c = row + move_row, col + move_column
-            if 0 <= r < 8 and 0 <= c < 8:
-                # Si la case est vide
-                if pawn_grid[r][c] == 0:
-                    possible_moves.append((r, c))
-                # Si la case contient un pion ennemi et que le mode est Katarenga
-                elif pawn_grid[r][c] != pawn_color and game_mode == 0:
-                    possible_moves.append((r, c))
-    
-    return possible_moves
+    from pawn import get_valid_moves
+    return get_valid_moves(row, col, board_grid, pawn_grid, game_mode)
 
 # Version améliorée de la classe Animation
 class Animation:
@@ -127,7 +28,7 @@ class Animation:
         self.end_pos = None
         self.moving_pawn_color = None  
         self.pending_move = None
-        self.animation_finished = False  # Flag pour une meilleure gestion
+        self.animation_finished = False
         
     def start_move(self, start_row, start_col, end_row, end_col, board_x, board_y, cell_size, pawn_color):
         """Démarre une animation de déplacement"""
@@ -160,7 +61,6 @@ class Animation:
         
         if progress >= 1.0 and not self.animation_finished:
             self.animation_finished = True
-            # Ne pas réinitialiser moving_pawn ici, le faire dans une méthode séparée
             
         return (int(current_x), int(current_y))
     
@@ -173,7 +73,7 @@ class Animation:
         return self.animation_finished
     
     def complete_animation(self):
-        """Finalise l'animation (à appeler après avoir mis à jour la grille logique)"""
+        """Finalise l'animation"""
         self.moving_pawn = None
         self.moving_pawn_color = None
         self.animation_finished = False
@@ -204,15 +104,19 @@ class Animation:
             if winner > 0:
                 game_over = True
         elif current_game_mode == 2:  # Si mode Isolation
-            # Pour Isolation, vérifier la victoire après chaque mouvement
             game_over, winner = check_isolation_victory(pawn_grid, self.pending_move['pawn_color'], None)
+        elif current_game_mode == 0:  # Si mode Katarenga
+            from katarenga import check_katarenga_victory
+            winner = check_katarenga_victory()
+            if winner > 0:
+                game_over = True
         
         # Nettoyer le mouvement en attente
         self.pending_move = None
         
         return winner, connected_pawns, game_over
 
-def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation):
+def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation, current_game_mode):
     """Dessine les pions avec animations simples"""
     DARK_RED = Colors.DARK_RED
     DARK_BLUE = Colors.DARK_BLUE
@@ -222,10 +126,13 @@ def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected
     moving_pos = animation.get_current_pos()
     moving_pawn_info = animation.moving_pawn
     
-    for row in range(8):
-        for col in range(8):
+    # Déterminer la taille de la grille selon le mode
+    grid_size = 10 if current_game_mode == 0 else 10  # Toujours 10x10 maintenant
+    
+    for row in range(grid_size):
+        for col in range(grid_size):
             if pawn_grid[row][col] > 0:
-                # Skip le pion en mouvement à sa position D'ORIGINE (pas de destination)
+                # Skip le pion en mouvement à sa position D'ORIGINE
                 if (moving_pawn_info and 
                     moving_pawn_info[0] == row and moving_pawn_info[1] == col):
                     continue
@@ -252,12 +159,12 @@ def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected
     
     # Dessiner le pion en mouvement par-dessus tout
     if moving_pos and moving_pawn_info and animation.moving_pawn_color:
-        # Utiliser la couleur sauvegardée
         pawn_color = DARK_RED if animation.moving_pawn_color == 1 else DARK_BLUE
         radius = cell_size // 3
         
         pygame.draw.circle(screen, pawn_color, moving_pos, radius)
         pygame.draw.circle(screen, BLACK, moving_pos, radius, 2)
+
 def show_invalid_positions_isolation(screen, pawn_grid, board_grid, board_x, board_y, cell_size):
     """
     Affiche des croix sur les cases où il n'est pas possible de placer un pion
@@ -265,9 +172,9 @@ def show_invalid_positions_isolation(screen, pawn_grid, board_grid, board_x, boa
     """
     from isolation import is_position_safe
     
-    for row in range(8):
-        for col in range(8):
-            # Si la case est vide mais pas sûre (pas possible d'y placer un pion)
+    for row in range(1, 9):  # Seulement la zone de jeu 8x8
+        for col in range(1, 9):
+            # Si la case est vide mais pas sûre
             if pawn_grid[row][col] == 0 and not is_position_safe(pawn_grid, row, col, board_grid):
                 # Dessiner une croix rouge
                 x = board_x + col * cell_size
@@ -283,68 +190,64 @@ def show_invalid_positions_isolation(screen, pawn_grid, board_grid, board_x, boa
                 pygame.draw.line(screen, (0, 0, 0), 
                             (x + cell_size - margin, y + margin), 
                             (x + margin, y + cell_size - margin), 8)
-                
+
 def create_game_board(quadrant_grid_data):
     """
     Crée un plateau de jeu à partir des données de grille des 4 quadrants
     """
-    # Créer une grille 8x8 vide pour le plateau (utilise des listes au lieu de numpy)
-    board_grid = [[0 for _ in range(8)] for _ in range(8)]
+    # Créer une grille 10x10 vide pour le plateau
+    board_grid = [[0 for _ in range(10)] for _ in range(10)]
     
     # Remplir la grille avec les données des quadrants
     if len(quadrant_grid_data) == 4:
         # Quadrant 1 (haut gauche)
         for i in range(4):
             for j in range(4):
-                if i < len(quadrant_grid_data[0]) and j < len(quadrant_grid_data[0][i]):
-                    board_grid[i][j] = quadrant_grid_data[0][i][j]
-                    
+                board_grid[i + 1][j + 1] = quadrant_grid_data[0][i][j]
+
         # Quadrant 2 (haut droite)
         for i in range(4):
             for j in range(4):
-                if i < len(quadrant_grid_data[1]) and j < len(quadrant_grid_data[1][i]):
-                    board_grid[i][j+4] = quadrant_grid_data[1][i][j]
-                    
+                board_grid[i + 1][j + 5] = quadrant_grid_data[1][i][j]
+
         # Quadrant 3 (bas gauche)
         for i in range(4):
             for j in range(4):
-                if i < len(quadrant_grid_data[2]) and j < len(quadrant_grid_data[2][i]):
-                    board_grid[i+4][j] = quadrant_grid_data[2][i][j]
-                    
+                board_grid[i + 5][j + 1] = quadrant_grid_data[2][i][j]
+
         # Quadrant 4 (bas droite)
         for i in range(4):
             for j in range(4):
-                if i < len(quadrant_grid_data[3]) and j < len(quadrant_grid_data[3][i]):
-                    board_grid[i+4][j+4] = quadrant_grid_data[3][i][j]
+                board_grid[i + 5][j + 5] = quadrant_grid_data[3][i][j]
+    
     return board_grid
 
 def initialize_pawns_for_game_mode(game_mode):
     """
     Initialise les pions selon le mode de jeu sélectionné
     """
-    # Créer une grille 8x8 vide pour les pions (utilise des listes au lieu de numpy)
-    pawn_grid = [[0 for _ in range(8)] for _ in range(8)]
+    # Créer une grille 10x10 vide pour les pions
+    pawn_grid = [[0 for _ in range(10)] for _ in range(10)]
     
     if game_mode == 0:  # Katarenga
-        # Pions rouges sur la première ligne
-        for col in range(8):
-            pawn_grid[0][col] = 1
-        
-        # Pions bleus sur la dernière ligne
-        for col in range(8):
-            pawn_grid[7][col] = 2
-    
+        # Pions rouges ligne 1 (joueur 1) - colonnes 1 à 8
+        for col in range(1, 9):
+            pawn_grid[1][col] = 1
+        # Pions bleus ligne 8 (joueur 2) - colonnes 1 à 8
+        for col in range(1, 9):
+            pawn_grid[8][col] = 2
+
     elif game_mode == 1:  # Congress
-        # Positions des pions rouges (joueur 1)
+        # Positions des pions rouges (joueur 1) - ajustées pour la zone 8x8
         red_positions = [
-            (0, 1), (0, 4), (1, 7), (3, 0), 
-            (4, 7), (6, 0), (7, 3), (7, 6)   
+            (1, 2), (1, 5), (2, 8), (4, 1), 
+            (5, 8), (7, 1), (8, 4), (8, 7)   
         ]
         
-        # Positions des pions bleus (joueur 2) 
+        # Positions des pions bleus (joueur 2) - ajustées pour la zone 8x8
         blue_positions = [
-            (0, 3), (0, 6), (1, 0), (3, 7), 
-            (4, 0), (6, 7), (7, 1), (7, 4) 
+            (1, 4), (1, 7), (2, 1), (4, 8), 
+            (5, 1), (7, 8), (8, 2), (8, 5) 
         ]
         
         # Placer les pions rouges
@@ -380,7 +283,7 @@ def start_game(screen, quadrants_data):
     DARK_BLUE = Colors.DARK_BLUE 
     DARK_RED = Colors.DARK_RED
     
-    # Chargement des images (garder le chemin original avec assets)
+    # Chargement des images
     PATH = os.path.dirname(os.path.abspath(sys.argv[0]))
     
     # Dictionnaire des valeurs de cellule aux images
@@ -407,26 +310,31 @@ def start_game(screen, quadrants_data):
     winner = 0         
     connected_pawns = [] 
     
-    # Pour detecter les changements de mode de jeu 
-    from game_modes import GLOBAL_SELECTED_GAME
-    
     # Obtenir le mode de jeu actuel depuis la variable globale
+    from game_modes import GLOBAL_SELECTED_GAME
     current_game_mode = GLOBAL_SELECTED_GAME
     
     # Initialiser les pions selon le mode de jeu
     pawn_grid = initialize_pawns_for_game_mode(current_game_mode)
     
+    # Initialiser Katarenga si nécessaire
+    if current_game_mode == 0:
+        from katarenga import reset_camps
+        reset_camps()
+    
     # Initialiser la phase de jeu
     game_phase = "play"
     
-    # POINT 2: Fonction pour réinitialiser le plateau selon le mode de jeu actuel
     def reset_game_for_mode():
         nonlocal current_player, selected_pawn, possible_moves, game_over, game_phase, winner, connected_pawns, current_game_mode
 
         current_game_mode = GLOBAL_SELECTED_GAME
-
-        # Initialiser les pions selon le mode de jeu
         new_pawn_grid = initialize_pawns_for_game_mode(current_game_mode)
+        
+        # Réinitialiser Katarenga si nécessaire
+        if current_game_mode == 0:
+            from katarenga import reset_camps
+            reset_camps()
 
         # Réinitialiser les variables de jeu
         selected_pawn = None
@@ -442,10 +350,6 @@ def start_game(screen, quadrants_data):
     # Font standard pour les boutons et textes
     font = pygame.font.Font(None, 24)
     
-    # Fonction pour retourner à l'écran précédent
-    def return_to_previous():
-        return
-    
     # Variable pour stocker le dernier mode de jeu connu
     last_known_game_mode = current_game_mode
     
@@ -454,7 +358,7 @@ def start_game(screen, quadrants_data):
     
     running = True
     while running:
-        # POINT 2: Vérifier si le mode de jeu a changé (gestion automatique du changement de mode de jeu)
+        # Vérifier si le mode de jeu a changé
         from game_modes import GLOBAL_SELECTED_GAME
         if GLOBAL_SELECTED_GAME != last_known_game_mode:
             current_game_mode = GLOBAL_SELECTED_GAME
@@ -464,27 +368,28 @@ def start_game(screen, quadrants_data):
         # Récupérer les dimensions actuelles de la fenêtre
         current_width, current_height = screen.get_size()
         
-        # Calculer la taille des cellules en fonction de la hauteur de l'écran
-        cell_size = min(current_width, current_height) // 12
+        if current_game_mode == 0:
+            cell_size = min(current_width, current_height) // 10  # Taille agrandie pour le plateau
+            frame_cell_size = min(current_width, current_height) // 12  # Garde le cadre plus petit
+        else:
+            cell_size = frame_cell_size = min(current_width, current_height) // 12
+
+
         
         # Redimensionner les images
         for key in images:
             images[key] = pygame.transform.scale(images[key], (cell_size, cell_size))
         
         # Taille du plateau en pixels 
-        board_size = 8 * cell_size
+        board_size = 10 * cell_size
+        frame_board_size = 10 * frame_cell_size
+        frame_x = (current_width - frame_board_size) // 2
+        frame_y = (current_height - frame_board_size) // 2
+
         
         # Position du plateau avec espace pour le contour
         board_x = (current_width - board_size) // 2
         board_y = (current_height - board_size) // 2
-        
-        # Zone complète du plateau avec contour
-        board_rect = pygame.Rect(
-            board_x - cell_size, 
-            board_y - cell_size,
-            board_size + 2 * cell_size,
-            board_size + 2 * cell_size
-        )
         
         # Boutons
         back_button = pygame.Rect(20, 20, 80, 30)
@@ -492,61 +397,115 @@ def start_game(screen, quadrants_data):
         background_scaled = pygame.transform.scale(background_image, screen.get_size())
         screen.blit(background_scaled, (0, 0))        
         
+        frame_board_size = 10 * frame_cell_size
+
         # Dessiner le contour du plateau
         if frame_image:
-            # Redimensionner le cadre à la taille du plateau avec bordure
             scaled_frame = pygame.transform.scale(frame_image, (
-                board_size + 2 * cell_size,
-                board_size + 2 * cell_size
+                frame_board_size + 2 * frame_cell_size,
+                frame_board_size + 2 * frame_cell_size
             ))
-            screen.blit(scaled_frame, (board_x - cell_size, board_y - cell_size))
+            screen.blit(scaled_frame, (frame_x - frame_cell_size, frame_y - frame_cell_size))
+
+
         
-        # Dessiner le plateau
-        for row in range(8):
-            for col in range(8):
-                cell_value = board_grid[row][col]
-                
-                cell_rect = pygame.Rect(
-                    board_x + col * cell_size,
-                    board_y + row * cell_size,
-                    cell_size,
-                    cell_size
-                )
-                
-                # Dessiner la cellule avec l'image correspondante
-                if cell_value in images:
-                    screen.blit(images[cell_value], cell_rect)
-                
-                # Toujours dessiner une bordure
-                pygame.draw.rect(screen, BLACK, cell_rect, 2)
+        # Dessiner le plateau selon le mode
+        if current_game_mode == 0:  # Katarenga - plateau 10x10
+            for row in range(10):
+                for col in range(10):
+                    cell_rect = pygame.Rect(
+                        board_x + col * cell_size,
+                        board_y + row * cell_size,
+                        cell_size,
+                        cell_size
+                    )
+                    
+                    # Les camps sont aux coins
+                    if (row == 0 and col == 0) or (row == 0 and col == 9) or (row == 9 and col == 0) or (row == 9 and col == 9):
+                        # Les camps seront dessinés séparément, ne pas dessiner de bordure ici
+                        pass
+                    elif 1 <= row <= 8 and 1 <= col <= 8:
+                        # Zone de jeu normale - dessiner seulement si on a une texture
+                        cell_value = board_grid[row][col]
+                        if cell_value in images:
+                            screen.blit(images[cell_value], cell_rect)
+                            # Dessiner la bordure seulement sur les cases avec texture
+                            pygame.draw.rect(screen, BLACK, cell_rect, 2)
+                    # Ne pas dessiner les cases vides des bords (lignes/colonnes 0 et 9)
+            
+            # Dessiner les camps pour Katarenga
+            from katarenga import draw_camps
+            draw_camps(screen, board_x, board_y, cell_size)
+        
+        else:  # Congress et Isolation - afficher seulement 8x8
+            for row in range(1, 9):
+                for col in range(1, 9):
+                    cell_value = board_grid[row][col]
+                    
+                    cell_rect = pygame.Rect(
+                        board_x + col * cell_size,
+                        board_y + row * cell_size,
+                        cell_size,
+                        cell_size
+                    )
+                    
+                    # Dessiner la cellule avec l'image correspondante
+                    if cell_value in images:
+                        screen.blit(images[cell_value], cell_rect)
+                        # Dessiner la bordure seulement sur les cases avec texture
+                        pygame.draw.rect(screen, BLACK, cell_rect, 2)
         
         # Dessiner les pions avec animations
-        draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation)
+        draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation, current_game_mode)
         
+        # Afficher les positions invalides pour Isolation
         if current_game_mode == 2 and not game_over and not animation.is_moving():
             show_invalid_positions_isolation(screen, pawn_grid, board_grid, board_x, board_y, cell_size)
-        # Vérifier si l'animation est terminée et exécuter le mouvement en attente
+        
+        # Gestion spéciale Katarenga : entrée dans les camps
+        if current_game_mode == 0 and not animation.is_moving() and animation.has_pending_move():
+            from katarenga import place_in_camp, check_katarenga_victory, get_camp_positions
+            to_row, to_col = animation.pending_move['to']
+            player = animation.pending_move['pawn_color']
+            camp_positions = get_camp_positions(player)
+            
+            if (to_row, to_col) in camp_positions:
+                if place_in_camp(to_row, to_col, pawn_grid, player):
+                    pawn_grid[animation.pending_move['from'][0]][animation.pending_move['from'][1]] = 0
+                    animation.pending_move = None
+                    winner = check_katarenga_victory()
+                    game_over = winner > 0
+                    if not game_over:
+                        current_player = 3 - current_player
+                    animation.complete_animation()
+                    continue
+
         if not animation.is_moving() and animation.has_pending_move():
             winner_result, connected_result, game_over_result = animation.execute_pending_move(pawn_grid, current_game_mode)
+            
             if winner_result is not None:
                 winner = winner_result
                 connected_pawns = connected_result
                 game_over = game_over_result
-            
-            # Si le jeu n'est pas terminé, passer au joueur suivant
+
+            # 💡 Vérifier si un joueur n’a plus assez de pions pour gagner (Katarenga uniquement)
+            if current_game_mode == 0 and not game_over:
+                forced_victory = check_minimum_pawn_victory_condition(pawn_grid, current_game_mode)
+                if forced_victory > 0:
+                    winner = forced_victory
+                    game_over = True
+
+            # Passer au joueur suivant si le jeu n’est pas terminé
             if not game_over:
-                current_player = 3 - current_player  # Alterné entre 1 et 2
+                current_player = 3 - current_player
+
+            animation.complete_animation()
+
         
-        # Dessiner les mouvements possibles (seulement pour Katarenga et Congress)
+        # Dessiner les mouvements possibles
         if (selected_pawn and possible_moves and not game_over and 
             not animation.is_moving() and current_game_mode in [0, 1]):
             highlight_possible_moves(screen, possible_moves, board_x, board_y, cell_size)
-        
-        # Mettre en surbrillance les pions connectés si le jeu est terminé en mode Congress
-        if game_over and winner > 0 and current_game_mode == 1:
-            player_color = DARK_RED if winner == 1 else DARK_BLUE
-            highlight_connected_pawns(screen, connected_pawns, board_x, board_y, cell_size, player_color)
-            display_victory_message(screen, winner)
         
         # Mettre en surbrillance les pions connectés si le jeu est terminé en mode Congress
         if game_over and winner > 0 and current_game_mode == 1:
@@ -575,7 +534,7 @@ def start_game(screen, quadrants_data):
         back_text_rect = back_text.get_rect(center=back_button.center)
         screen.blit(back_text, back_text_rect)
         
-        # Traitement de l'IA (conserver de game_board.py)
+        # Traitement de l'IA
         if (
             not game_over
             and current_player == 2
@@ -598,7 +557,6 @@ def start_game(screen, quadrants_data):
                 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return_to_previous()
                 return
                 
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -607,7 +565,6 @@ def start_game(screen, quadrants_data):
                     display_victory_message(screen, 0)
                     pygame.display.flip()
                     pygame.time.delay(2000)
-                    return_to_previous()
                     return
                 
                 # clic sur le plateau (seulement si le jeu n'est pas terminé et aucune animation)
@@ -616,17 +573,20 @@ def start_game(screen, quadrants_data):
                     # Si le clic est dans les limites du plateau
                     if (board_x <= mouse_x < board_x + board_size and 
                         board_y <= mouse_y < board_y + board_size):
+
                         # Convertir les coordonnées du clic en indices de la grille
                         col = (mouse_x - board_x) // cell_size
                         row = (mouse_y - board_y) // cell_size
                         
-                        # POINT 1: Support complet du mode Isolation avec la logique de placement de pions
+                        # Mode Isolation avec la logique de placement de pions
                         if current_game_mode == 2:  # Mode Isolation
-                            if place_pawn(pawn_grid, row, col, current_player, board_grid):
-                                game_over, winner = check_isolation_victory(pawn_grid, current_player, board_grid)                            
-                                if not game_over:
-                                    # Passer au joueur suivant
-                                    current_player = 2 if current_player == 1 else 1
+                            # Limiter aux cases de jeu 8x8
+                            if 1 <= row <= 8 and 1 <= col <= 8:
+                                if place_pawn(pawn_grid, row, col, current_player, board_grid):
+                                    game_over, winner = check_isolation_victory(pawn_grid, current_player, board_grid)                            
+                                    if not game_over:
+                                        # Passer au joueur suivant
+                                        current_player = 2 if current_player == 1 else 1
                         
                         elif current_game_mode in [0, 1]:  # Katarenga ou Congress
                             if game_phase == "play":
@@ -636,7 +596,24 @@ def start_game(screen, quadrants_data):
                                     
                                     # Vérifier si le clic est sur l'un des mouvements possibles
                                     if (row, col) in possible_moves:
-                                        # Démarrer l'animation AVEC la couleur du pion
+                                        # Gestion spéciale pour Katarenga et les camps
+                                        if current_game_mode == 0:
+                                            from katarenga import get_camp_positions, place_in_camp, check_katarenga_victory
+                                            camp_positions = get_camp_positions(current_player)
+                                            
+                                            if (row, col) in camp_positions:
+                                                # Placement direct dans un camp
+                                                if place_in_camp(row, col, pawn_grid, current_player):
+                                                    pawn_grid[selected_row][selected_col] = 0
+                                                    winner = check_katarenga_victory()
+                                                    game_over = winner > 0
+                                                    if not game_over:
+                                                        current_player = 3 - current_player
+                                                    selected_pawn = None
+                                                    possible_moves = []
+                                                    continue
+                                        
+                                        # Démarrer l'animation normale
                                         animation.start_move(selected_row, selected_col, row, col, board_x, board_y, cell_size, pawn_grid[selected_row][selected_col])
                                         
                                         # Stocker le mouvement pour l'exécuter après l'animation
@@ -663,10 +640,16 @@ def start_game(screen, quadrants_data):
                                 
                                 # Si aucun pion n'est sélectionné
                                 else:
-                                    # Vérifier si le clic est sur un pion du joueur actuel
-                                    if pawn_grid[row][col] == current_player:
-                                        selected_pawn = (row, col)
-                                        possible_moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, current_game_mode)
+                                    # Pour Katarenga, permettre la sélection sur tout le plateau 10x10
+                                    if current_game_mode == 0:
+                                        if 0 <= row < 10 and 0 <= col < 10 and pawn_grid[row][col] == current_player:
+                                            selected_pawn = (row, col)
+                                            possible_moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, current_game_mode)
+                                    else:
+                                        # Pour Congress et Isolation, limiter à la zone 8x8
+                                        if 1 <= row <= 8 and 1 <= col <= 8 and pawn_grid[row][col] == current_player:
+                                            selected_pawn = (row, col)
+                                            possible_moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, current_game_mode)
                 
         pygame.display.flip()
         clock.tick(60)  # 60 FPS pour des animations fluides
@@ -714,15 +697,22 @@ def display_victory_message(screen, winner):
 def randomAi(pawn_grid, board_grid, current_player, game_mode):
     """
     IA simple qui choisit un mouvement aléatoire parmi les mouvements possibles.
-    Version mise à jour qui prend le mode de jeu en paramètre.
+    Version mise à jour qui utilise maintenant pawn.py pour tout.
     """
+    from pawn import get_valid_moves
     possible_moves = []
     
+    # Déterminer la taille de la grille selon le mode
+    if game_mode == 0:  # Katarenga
+        grid_range = range(10)
+    else:  # Congress et Isolation
+        grid_range = range(1, 9)
+    
     # Trouver tous les pions du joueur actuel
-    for row in range(8):
-        for col in range(8):
+    for row in grid_range:
+        for col in grid_range:
             if pawn_grid[row][col] == current_player:
-                moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, game_mode)
+                moves = get_valid_moves(row, col, board_grid, pawn_grid, game_mode)
                 possible_moves.extend([(row, col, move) for move in moves])
     
     # Si aucun mouvement possible, retourner None
