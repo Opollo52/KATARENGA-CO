@@ -1,8 +1,7 @@
 import pygame
-from menu import run_menu
+from menus.menu import run_menu
 from config_manager import initialize_quadrants
-from isolation import run_isolation  # ✅ Import de la fonction isolation
-
+from jeux.isolation import run_isolation
 
 if __name__ == "__main__":
     # Initialiser les quadrants et récupérer la configuration

@@ -1,6 +1,7 @@
 class Colors:
     DARK_RED = (200, 0, 0)
     DARK_BLUE = (0, 0, 150)
+    DARK_GREEN = (0, 150, 0)
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
     GREEN = (176, 242, 194)
