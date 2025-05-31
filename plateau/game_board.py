@@ -9,6 +9,7 @@ from plateau.game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
 from jeux.congress import check_victory, highlight_connected_pawns
 from jeux.isolation import place_pawn, check_isolation_victory
 from jeux.katarenga import check_minimum_pawn_victory_condition
+from save.save_game import save_manager
 
 
 def get_valid_moves_with_mode(row, col, board_grid, pawn_grid, game_mode):
@@ -388,10 +389,27 @@ def isolation_ai(pawn_grid, board_grid, current_player):
     # Choisir une position aléatoire
     return random.choice(valid_positions)
 
-def start_game(screen, quadrants_data):
-    """
-    Lance le jeu avec les quadrants sélectionnés
-    """
+def start_game(screen, quadrants_data, loaded_state=None):
+    if loaded_state:
+        pawn_grid = loaded_state['pawn_grid']
+        current_player = loaded_state['current_player']
+        current_game_mode = loaded_state['game_mode']
+        winner = loaded_state.get('winner', 0)
+        game_over = loaded_state.get('game_over', False)
+        connected_pawns = loaded_state.get('connected_pawns', [])
+        board_grid = create_game_board(loaded_state.get('quadrants_data'))
+        from jeux.katarenga import reset_camps
+        reset_camps()  # Réinitialiser les camps si Katarenga
+    else:
+        from plateau.game_modes import GLOBAL_SELECTED_GAME
+        current_game_mode = GLOBAL_SELECTED_GAME
+        pawn_grid = initialize_pawns_for_game_mode(current_game_mode)
+        current_player = 1
+        winner = 0
+        game_over = False
+        connected_pawns = []
+        board_grid = create_game_board(quadrants_data)
+
     pygame.display.set_caption("Partie en cours")
 
     # Couleurs
@@ -510,6 +528,8 @@ def start_game(screen, quadrants_data):
         
         # Boutons
         back_button = pygame.Rect(20, 20, 80, 30)
+        save_button = pygame.Rect(20, 80, 80, 30)
+
         
         background_scaled = pygame.transform.scale(background_image, screen.get_size())
         screen.blit(background_scaled, (0, 0))        
@@ -656,6 +676,15 @@ def start_game(screen, quadrants_data):
         back_text = font.render("Abandonner", True, WHITE)
         back_text_rect = back_text.get_rect(center=back_button.center)
         screen.blit(back_text, back_text_rect)
+
+        # Dessiner le bouton sauvegarde
+        save_button = pygame.Rect(save_button.x, save_button.y + 50, text_width + 20, text_height + 10)
+        pygame.draw.rect(screen, (0, 150, 255), save_button)
+        font = pygame.font.Font(None, 30)
+        text = font.render("Sauvegarder", True, (255, 255, 255))
+        screen.blit(text, (save_button.x + 10, save_button.y + 10))
+
+        
         
         # Traitement de l'IA - SEULEMENT si mode Ordi sélectionné
         if (not game_over and current_player == 2 and not animation.is_moving() and 
@@ -709,6 +738,21 @@ def start_game(screen, quadrants_data):
                     elif choice == "quitter":
                         # Retourner au hub
                         return
+
+                elif save_button.collidepoint(event.pos):
+                    game_state = save_manager.create_game_state(
+                        pawn_grid=pawn_grid,
+                        board_grid=board_grid,
+                        current_player=current_player,
+                        game_mode=current_game_mode,
+                        selected_pawn=selected_pawn if 'selected_pawn' in locals() else None,
+                        game_over=game_over if 'game_over' in locals() else False,
+                        winner=winner if 'winner' in locals() else 0,
+                        connected_pawns=connected_pawns if 'connected_pawns' in locals() else None,
+                        quadrants_data=quadrants_data if 'quadrants_data' in locals() else None
+                    )
+                    save_manager.save_game(game_state)
+
                 
                 # clic sur le plateau (seulement si le jeu n'est pas terminé et aucune animation)
                 if not game_over and not animation.is_moving():
@@ -1027,3 +1071,9 @@ def randomAi(pawn_grid, board_grid, current_player, game_mode):
     chosen_move = random.choice(possible_moves)
     
     return chosen_move  # Retourne (from_row, from_col, (to_row, to_col))
+
+
+def resume_game_from_save(screen, save_data):
+    from plateau.game_board import start_game
+    quadrants_data = save_data.get('quadrants_data')
+    start_game(screen, quadrants_data, loaded_state=save_data)

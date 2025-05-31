@@ -189,3 +189,23 @@ def is_valid_move(from_row, from_col, to_row, to_col, board_grid, pawn_grid, gam
     
     # Vérifier si la position d'arrivée est dans les mouvements possibles
     return (to_row, to_col) in possible_moves
+
+def draw_pawns(screen, pawn_grid, board_x, board_y, cell_size):
+    from assets.colors import Colors
+    BLACK = Colors.BLACK
+    RED = Colors.DARK_RED
+    BLUE = Colors.DARK_BLUE
+
+    for row in range(len(pawn_grid)):
+        for col in range(len(pawn_grid[0])):
+            value = pawn_grid[row][col]
+            if value == 0:
+                continue
+            color = RED if value == 1 else BLUE
+            center = (
+                board_x + col * cell_size + cell_size // 2,
+                board_y + row * cell_size + cell_size // 2
+            )
+            radius = cell_size // 3
+            pygame.draw.circle(screen, color, center, radius)
+            pygame.draw.circle(screen, BLACK, center, radius, 2)

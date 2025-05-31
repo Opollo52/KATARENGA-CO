@@ -1,4 +1,5 @@
 import pygame
+from save.save_game import save_manager
 
 # Variables globales pour les camps (en dehors du plateau 8x8)
 camps_player1 = {"camp1": [], "camp2": []}  # Camps du joueur 1 (rouge)
