@@ -12,7 +12,7 @@ if __name__ == "__main__":
     pygame.display.set_caption("Jeu Pygame")
 
     # Lancement du menu principal
-    selected_game = run_menu(screen)  # ✅ Doit retourner un identifiant de mode
+    selected_game = run_menu(screen)  # Doit retourner un identifiant de mode
 
     # Redirection selon le mode de jeu choisi
     if selected_game == "Isolation":
