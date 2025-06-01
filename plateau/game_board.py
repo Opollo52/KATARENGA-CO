@@ -4,12 +4,12 @@ import time
 import random
 from pathlib import Path
 from assets.colors import Colors
-from assets.audio_manager import audio_manager  # ✅ NOUVEAU IMPORT AUDIO
 from plateau.pawn import get_valid_moves, highlight_possible_moves, is_valid_move
 from plateau.game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
 from jeux.congress import check_victory, highlight_connected_pawns
 from jeux.isolation import place_pawn, check_isolation_victory
 from jeux.katarenga import check_minimum_pawn_victory_condition
+from assets.audio_manager import audio_manager
 
 
 def get_valid_moves_with_mode(row, col, board_grid, pawn_grid, game_mode):
@@ -38,6 +38,9 @@ class Animation:
         self.move_start_time = time.time()
         self.animation_finished = False
         
+        # Jouer le son de déplacement
+        audio_manager.play_sound('pawn_move')
+        
         # Positions d'écran
         self.start_pos = (
             board_x + start_col * cell_size + cell_size // 2,
@@ -47,9 +50,6 @@ class Animation:
             board_x + end_col * cell_size + cell_size // 2,
             board_y + end_row * cell_size + cell_size // 2
         )
-        
-        # ✅ NOUVEAU: Jouer le son de déplacement
-        audio_manager.play_sound('pawn_move')
     
     def get_current_pos(self):
         """Retourne la position actuelle du pion en mouvement"""
@@ -121,7 +121,7 @@ class Animation:
         return winner, connected_pawns, game_over
 
 def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation, current_game_mode):
-    """Dessine les pions avec animations - Version corrigée pour le réseau"""
+    """Dessine les pions avec animations simples"""
     DARK_RED = Colors.DARK_RED
     DARK_BLUE = Colors.DARK_BLUE
     BLACK = Colors.BLACK
@@ -130,16 +130,11 @@ def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected
     moving_pos = animation.get_current_pos()
     moving_pawn_info = animation.moving_pawn
     
-    # Déterminer la zone de dessin selon le mode
-    if current_game_mode == 0:  # Katarenga - plateau 10x10 complet
-        grid_range = range(10)
-        offset_row, offset_col = 0, 0
-    else:  # Congress et Isolation - zone 8x8 dans la grille 10x10
-        grid_range = range(1, 9)
-        offset_row, offset_col = 1, 1  # Offset pour l'affichage
+    # Déterminer la taille de la grille selon le mode
+    grid_size = 10  # Toujours 10x10 maintenant pour tous les modes
     
-    for row in grid_range:
-        for col in grid_range:
+    for row in range(grid_size):
+        for col in range(grid_size):
             if pawn_grid[row][col] > 0:
                 # Skip le pion en mouvement à sa position D'ORIGINE
                 if (moving_pawn_info and 
@@ -148,13 +143,10 @@ def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected
                 
                 pawn_color = DARK_RED if pawn_grid[row][col] == 1 else DARK_BLUE
                 
-                # Position normale du pion - ajustée pour l'affichage
-                display_row = row - offset_row
-                display_col = col - offset_col
-                
+                # Position normale du pion
                 pawn_center = (
-                    board_x + display_col * cell_size + cell_size // 2,
-                    board_y + display_row * cell_size + cell_size // 2
+                    board_x + col * cell_size + cell_size // 2,
+                    board_y + row * cell_size + cell_size // 2
                 )
                 
                 # Rayon normal
@@ -176,6 +168,99 @@ def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected
         
         pygame.draw.circle(screen, pawn_color, moving_pos, radius)
         pygame.draw.circle(screen, BLACK, moving_pos, radius, 2)
+
+def check_isolation_complete_victory(pawn_grid, board_grid):
+    """
+    Vérifie si le jeu Isolation est terminé car toutes les cases sont prises
+    (soit par des pions, soit interdites par des croix)
+    """
+    # Compter les cases libres ET non interdites dans la zone 8x8
+    free_valid_positions = 0
+    
+    for row in range(1, 9):
+        for col in range(1, 9):
+            if pawn_grid[row][col] == 0:  # Case vide
+                # Vérifier si cette case est interdite (avec croix)
+                position_forbidden = False
+                
+                # Vérifier tous les pions existants pour voir s'ils interdisent cette case
+                for pion_row in range(1, 9):
+                    for pion_col in range(1, 9):
+                        if pawn_grid[pion_row][pion_col] != 0:  # Il y a un pion ici
+                            cell_color = board_grid[pion_row][pion_col]
+                            
+                            # Calculer les positions d'attaque selon la couleur de la case
+                            if cell_color == 3:  # Bleu = Roi
+                                directions = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
+                                for dr, dc in directions:
+                                    new_row, new_col = pion_row + dr, pion_col + dc
+                                    if new_row == row and new_col == col:
+                                        position_forbidden = True
+                                        break
+                            
+                            elif cell_color == 4:  # Rouge = Tour
+                                directions = [(-1,0), (1,0), (0,-1), (0,1)]
+                                for dr, dc in directions:
+                                    new_row, new_col = pion_row + dr, pion_col + dc
+                                    while 1 <= new_row <= 8 and 1 <= new_col <= 8:
+                                        if new_row == row and new_col == col:
+                                            position_forbidden = True
+                                            break
+                                        if pawn_grid[new_row][new_col] != 0:
+                                            break
+                                        if board_grid[new_row][new_col] == 4:
+                                            break
+                                        new_row, new_col = new_row + dr, new_col + dc
+                                    if position_forbidden:
+                                        break
+                            
+                            elif cell_color == 1:  # Jaune = Fou
+                                directions = [(-1,-1), (-1,1), (1,-1), (1,1)]
+                                for dr, dc in directions:
+                                    new_row, new_col = pion_row + dr, pion_col + dc
+                                    while 1 <= new_row <= 8 and 1 <= new_col <= 8:
+                                        if new_row == row and new_col == col:
+                                            position_forbidden = True
+                                            break
+                                        if pawn_grid[new_row][new_col] != 0:
+                                            break
+                                        if board_grid[new_row][new_col] == 1:
+                                            break
+                                        new_row, new_col = new_row + dr, new_col + dc
+                                    if position_forbidden:
+                                        break
+                            
+                            elif cell_color == 2:  # Vert = Cavalier
+                                knight_moves = [(-2,-1), (-2,1), (-1,-2), (-1,2), (1,-2), (1,2), (2,-1), (2,1)]
+                                for dr, dc in knight_moves:
+                                    new_row, new_col = pion_row + dr, pion_col + dc
+                                    if new_row == row and new_col == col:
+                                        position_forbidden = True
+                                        break
+                            
+                            if position_forbidden:
+                                break
+                        if position_forbidden:
+                            break
+                
+                # Si la case n'est pas interdite, c'est une case libre valide
+                if not position_forbidden:
+                    free_valid_positions += 1
+    
+    # Si aucune case libre et valide, le jeu est terminé
+    # Le gagnant est celui qui a le plus de pions
+    if free_valid_positions == 0:
+        player1_pawns = sum(1 for row in range(1, 9) for col in range(1, 9) if pawn_grid[row][col] == 1)
+        player2_pawns = sum(1 for row in range(1, 9) for col in range(1, 9) if pawn_grid[row][col] == 2)
+        
+        if player1_pawns > player2_pawns:
+            return True, 1
+        elif player2_pawns > player1_pawns:
+            return True, 2
+        else:
+            return True, 0  # Égalité
+    
+    return False, 0
 
 def show_invalid_positions_isolation(screen, pawn_grid, board_grid, board_x, board_y, cell_size):
     """
@@ -407,7 +492,7 @@ def start_game(screen, quadrants_data):
     pygame.display.set_caption("Partie en cours")
 
     # Couleurs
-    script_dir = Path(__file__).parent.parent.absolute()
+    script_dir = Path(sys.argv[0]).parent.absolute()
     background_image = pygame.image.load(script_dir / "assets" / "img" / "fond.png")
     
     WHITE = Colors.WHITE
@@ -420,7 +505,7 @@ def start_game(screen, quadrants_data):
     DARK_RED = Colors.DARK_RED
     
     # Chargement des images
-    PATH = Path(__file__).parent.parent.absolute()
+    PATH = Path(sys.argv[0]).parent.absolute()
     
     # Dictionnaire des valeurs de cellule aux images
     images = {}
@@ -590,6 +675,13 @@ def start_game(screen, quadrants_data):
         if current_game_mode == 2 and not game_over and not animation.is_moving():
             show_invalid_positions_isolation(screen, pawn_grid, board_grid, board_x, board_y, cell_size)
         
+        # NOUVELLE VÉRIFICATION: Vérifier si toutes les cases sont prises en mode Isolation
+        if current_game_mode == 2 and not game_over and not animation.is_moving() and not animation.has_pending_move():
+            complete_game_over, complete_winner = check_isolation_complete_victory(pawn_grid, board_grid)
+            if complete_game_over:
+                game_over = True
+                winner = complete_winner
+        
         # Gestion spéciale Katarenga : entrée dans les camps
         if current_game_mode == 0 and not animation.is_moving() and animation.has_pending_move():
             from jeux.katarenga import place_in_camp, check_katarenga_victory, get_camp_positions
@@ -641,7 +733,7 @@ def start_game(screen, quadrants_data):
             highlight_connected_pawns(screen, connected_pawns, board_x, board_y, cell_size, player_color)
 
         # Afficher le message de victoire unifié pour tous les modes
-        if game_over and winner > 0:
+        if game_over and winner >= 0:
             choice = display_victory_message(screen, winner)
             if choice == "rejouer":
                 # Relancer le game_setup pour rejouer
@@ -696,6 +788,8 @@ def start_game(screen, quadrants_data):
                         row, col = ai_position
                         # Placer directement le pion (on sait que c'est valide)
                         pawn_grid[row][col] = current_player
+                        # Jouer le son de placement
+                        audio_manager.play_sound('pawn_move')
                         
                         from jeux.isolation import check_isolation_victory
                         game_over, winner = check_isolation_victory(pawn_grid, current_player, board_grid)
@@ -711,9 +805,11 @@ def start_game(screen, quadrants_data):
                 return
                 
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Son de clic de bouton
+                audio_manager.play_sound('button_click')
+                
                 # Quitter bouton abandonner
                 if back_button.collidepoint(event.pos):
-                    audio_manager.play_sound('button_click')  # ✅ SON BOUTON
                     choice = display_victory_message(screen, 0)
                     if choice == "rejouer":
                         # Relancer le game_setup pour rejouer
@@ -825,7 +921,8 @@ def start_game(screen, quadrants_data):
                                 # Si on peut placer le pion, le faire
                                 if can_place:
                                     pawn_grid[row][col] = current_player
-                                    audio_manager.play_sound('pawn_move')  # ✅ SON PLACEMENT PION
+                                    # Jouer le son de placement
+                                    audio_manager.play_sound('pawn_move')
                                     
                                     # Vérifier si l'adversaire peut encore jouer
                                     from jeux.isolation import check_isolation_victory
@@ -851,7 +948,8 @@ def start_game(screen, quadrants_data):
                                                 # Placement direct dans un camp
                                                 if place_in_camp(row, col, pawn_grid, current_player):
                                                     pawn_grid[selected_row][selected_col] = 0
-                                                    audio_manager.play_sound('pawn_move')  # ✅ SON MOUVEMENT
+                                                    # Jouer le son de déplacement
+                                                    audio_manager.play_sound('pawn_move')
                                                     winner = check_katarenga_victory()
                                                     game_over = winner > 0
                                                     if not game_over:
@@ -917,7 +1015,12 @@ def display_victory_message(screen, winner):
     if winner == 0:
         message = "Partie abandonnée"
     else:
-        message = f"Victoire du joueur {'Rouge' if winner == 1 else 'Bleu'} !"
+        if winner == 1:
+            message = "Victoire du joueur Rouge !"
+        elif winner == 2:
+            message = "Victoire du joueur Bleu !"
+        else:
+            message = "Match nul !"
     
     # Créer la surface du texte
     text = font.render(message, True, text_color)
@@ -999,19 +1102,17 @@ def display_victory_message(screen, winner):
                 return "quit"
                 
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Son de clic de bouton
+                audio_manager.play_sound('button_click')
                 if rejouer_button.collidepoint(event.pos):
-                    audio_manager.play_sound('button_click')  # ✅ SON BOUTON
                     return "rejouer"
                 elif quitter_button.collidepoint(event.pos):
-                    audio_manager.play_sound('button_click')  # ✅ SON BOUTON
                     return "quitter"
                     
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    audio_manager.play_sound('button_click')  # ✅ SON BOUTON
                     return "quitter"
                 elif event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
-                    audio_manager.play_sound('button_click')  # ✅ SON BOUTON
                     return "rejouer"
         
         clock.tick(60)
