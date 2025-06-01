@@ -105,6 +105,7 @@ def check_katarenga_victory():
     return 0
 
 def draw_camps(screen, board_x, board_y, cell_size):
+    """Dessine les camps dans les coins du frame sans texture de fond"""
     # Couleurs
     RED = (200, 50, 50)
     BLUE = (50, 50, 200)
@@ -159,12 +160,18 @@ def draw_camps(screen, board_x, board_y, cell_size):
             # Plus besoin d'afficher le nombre car il n'y a qu'un pion maximum par camp
 
 def has_pion_in_camp(player):
+    """Vérifie si le joueur a au moins un pion dans ses camps"""
     if player == 1:  # Rouge
         return len(camps_player1["camp1"]) > 0 or len(camps_player1["camp2"]) > 0
     else:  # Bleu
         return len(camps_player2["camp1"]) > 0 or len(camps_player2["camp2"]) > 0
 
 def check_minimum_pawn_victory_condition(pawn_grid, game_mode):
+    """
+    NOUVELLES RÈGLES :
+    - Si un joueur a un pion dans un camp, il peut continuer même avec 1 seul pion sur le plateau
+    - Si un joueur n'a pas de pion dans un camp ET qu'il ne lui reste qu'1 pion sur le plateau, il perd
+    """
     if game_mode != 0:
         return 0  # Ne s'applique qu'à Katarenga
     

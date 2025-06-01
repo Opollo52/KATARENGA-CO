@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from config_manager import initialize_quadrants
 from assets.colors import Colors
-from assets.audio_manager import audio_manager  #  IMPORT AUDIO
+from assets.audio_manager import audio_manager  # ✅ NOUVEAU IMPORT AUDIO
 
 JSON_FILE = "quadrants.json"
 
@@ -206,7 +206,7 @@ def show_creator(screen):
                 
             quadrant_id = f"quadrant_{next_id}"
             
-            #  CORRECTION : Sauvegarder l'image dans le sous-dossier
+            # ✅ CORRECTION : Sauvegarder l'image dans le sous-dossier
             img_filename = f"quadrant_{next_id}.png"
             img_path = QUADRANTS_SUB_DIR / img_filename  # Sauvegarde dans quadrant/quadrant/
             
@@ -239,7 +239,7 @@ def show_creator(screen):
                         row_data.append(0)  # Valeur par défaut si couleur inconnue
                 grid_data.append(row_data)
             
-            #  CORRECTION : Chemin relatif correct pour le JSON
+            # ✅ CORRECTION : Chemin relatif correct pour le JSON
             data[quadrant_id] = {
                 "image_path": f"quadrant/quadrant/{img_filename}",  # Chemin vers le sous-dossier
                 "grid": grid_data
@@ -404,13 +404,13 @@ def show_creator(screen):
                 else:
                     action = menu.get_action(x, y)
                     if action == "Retour":
-                        audio_manager.play_sound('button_click')  #   gestion SON
-                        running = False  # : fermer la fenêtre
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
+                        running = False  # ✅ CORRECTION : fermer la fenêtre
                     elif action == "Reset":
-                        audio_manager.play_sound('button_click')  #   gestion SON
-                        quadrant.reset() 
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
+                        quadrant.reset()  # ✅ CORRECTION : appeler reset() au lieu de reset
                     elif action == "Sauvegarder":
-                        audio_manager.play_sound('button_click')  #   gestion SON
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         quadrant.save()
 
         pygame.display.flip()

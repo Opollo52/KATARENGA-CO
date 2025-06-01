@@ -13,9 +13,9 @@ class AudioManager:
         """Initialise le système audio de pygame"""
         try:
             pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
-            print(" Système audio initialisé")
+            print("✅ Système audio initialisé")
         except pygame.error as e:
-            print(f" Erreur audio: {e}")
+            print(f"❌ Erreur audio: {e}")
     
     def load_settings(self):
         """Charge les paramètres audio depuis settings.json"""
@@ -87,14 +87,14 @@ class AudioManager:
                         try:
                             self.sounds[sound_name] = pygame.mixer.Sound(str(sound_path))
                             self.sounds[sound_name].set_volume(self.settings['volume'])
-                            print(f" Son chargé: {sound_name} ({filename})")
+                            print(f"✅ Son chargé: {sound_name} ({filename})")
                             sound_loaded = True
                             break
                         except pygame.error as e:
-                            print(f" Erreur chargement {filename}: {e}")
+                            print(f"❌ Erreur chargement {filename}: {e}")
                 
                 if not sound_loaded:
-                    print(f"  Aucun fichier trouvé pour: {sound_name}")
+                    print(f"⚠️  Aucun fichier trouvé pour: {sound_name}")
                     print(f"    Fichiers recherchés: {possible_files}")
                     
         except Exception as e:

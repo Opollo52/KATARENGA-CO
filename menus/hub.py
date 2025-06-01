@@ -76,16 +76,16 @@ def show_settings(screen):
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if buttons[0].collidepoint(event.pos):  # Jouer
-                    audio_manager.play_sound('button_click')  #  gestion SON
+                    audio_manager.play_sound('button_click')  #  NOUVEAU SON
                     show_game_modes(screen)  # Utilise directement show_game_modes avec le bouton Jouer
                 elif buttons[1].collidepoint(event.pos):  # Quadrant
-                    audio_manager.play_sound('button_click')  #   gestion SON
+                    audio_manager.play_sound('button_click')  #  NOUVEAU SON
                     show_quadrant(screen)
                 elif buttons[2].collidepoint(event.pos):  # Paramètres
-                    audio_manager.play_sound('button_click')  #  gestion SON
-                    show_settings_menu(screen)  #   PAGE SETTINGS
+                    audio_manager.play_sound('button_click')  #  NOUVEAU SON
+                    show_settings_menu(screen)  #  NOUVELLE PAGE SETTINGS
                 elif buttons[3].collidepoint(event.pos):  # Quitter
-                    audio_manager.play_sound('button_click')  #   gestion SON
+                    audio_manager.play_sound('button_click')  # NOUVEAU SON
                     running = False
 
         pygame.display.flip()

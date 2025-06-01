@@ -1,6 +1,6 @@
 {
     "audio": {
-        "enabled": false,
+        "enabled": true,
         "volume": 1.0
     }
 }
