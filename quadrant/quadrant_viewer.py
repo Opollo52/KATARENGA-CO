@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from config_manager import initialize_quadrants
 from assets.colors import Colors
-from assets.audio_manager import audio_manager  # ✅ NOUVEAU IMPORT AUDIO
+from assets.audio_manager import audio_manager  #  IMPORT AUDIO
 
 def load_quadrants():
     """Charge les quadrants depuis le fichier JSON en initialisant si nécessaire"""
@@ -260,22 +260,22 @@ def show_quadrant_library(screen):
                         
                         # Clic sur le bouton retour
                         if back_button.collidepoint(event.pos):
-                            audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
+                            audio_manager.play_sound('button_click')  #  gestion SON
                             return
                 else:
                     # En mode détail
                     if event.button == 1:  # Clic gauche
                         # Clic sur le bouton retour spécifique au mode détail
                         if detail_back_button.collidepoint(event.pos):
-                            audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
+                            audio_manager.play_sound('button_click')  #   gestion SON
                             view_mode = "library"
                         # Clic sur le bouton retour principal (en bas)
                         elif back_button.collidepoint(event.pos):
-                            audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
+                            audio_manager.play_sound('button_click')  #   gestion SON
                             return
                         # Tout autre clic (sauf sur les boutons) revient à la bibliothèque
                         elif not back_button.collidepoint(event.pos):
-                            audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON (clic général)
+                            audio_manager.play_sound('button_click')  #   gestion SON
                             view_mode = "library"
             
         pygame.display.flip()
