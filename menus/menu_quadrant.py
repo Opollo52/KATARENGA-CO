@@ -83,7 +83,7 @@ def show_quadrant(screen):
                     from quadrant.quadrant_viewer import show_quadrant_library
                     show_quadrant_library(screen)
                 elif buttons[1].collidepoint(event.pos):  # Créer un quadrant
-                    audio_manager.play_sound('button_click')  # ✅ NOUVEAU
+                    audio_manager.play_sound('button_click')  #    gestion SON
                     from quadrant.creator import show_creator
                     show_creator(screen)
                 elif buttons[2].collidepoint(event.pos):  # Retour
