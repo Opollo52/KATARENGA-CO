@@ -2,6 +2,7 @@ import pygame
 import sys
 from pathlib import Path
 from assets.colors import Colors
+from assets.audio_manager import audio_manager
 
 def show_quadrant(screen):
     # Récupérer les dimensions de l'écran
@@ -70,7 +71,7 @@ def show_quadrant(screen):
             pygame.draw.rect(screen, tuple(min(c + 30, 255) for c in color), rect, 2)
 
         for i, (text, rect) in enumerate(zip(texts, buttons)):
-            draw_centered_text(text, rect, BLACK)
+            draw_centered_text(text, rect, BLACK)   
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -78,12 +79,15 @@ def show_quadrant(screen):
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if buttons[0].collidepoint(event.pos):  # Voir quadrants
+                    audio_manager.play_sound('button_click')  # festion de son
                     from quadrant.quadrant_viewer import show_quadrant_library
                     show_quadrant_library(screen)
                 elif buttons[1].collidepoint(event.pos):  # Créer un quadrant
-                    from quadrant.creator import run_creator  # Importation à la volée pour éviter l'import circulaire
-                    run_creator(screen)  # Appel de la fonction pour lancer le créateur
-                elif buttons[2].collidepoint(event.pos):  # Quitter
+                    audio_manager.play_sound('button_click')  # ✅ NOUVEAU
+                    from quadrant.creator import show_creator
+                    show_creator(screen)
+                elif buttons[2].collidepoint(event.pos):  # Retour
+                    audio_manager.play_sound('button_click')  # gestion de son
                     running = False
 
         pygame.display.flip()

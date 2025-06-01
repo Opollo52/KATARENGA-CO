@@ -48,11 +48,12 @@ def get_valid_moves(row, col, board_grid, pawn_grid, game_mode=None):
     # Pour Katarenga, vérifier si on peut aller aux camps
     camp_moves = []
     if game_mode == 0:
-        from jeux.katarenga import is_on_enemy_baseline, get_camp_positions
+        from jeux.katarenga import is_on_enemy_baseline, get_camp_positions, is_camp_occupied
         if is_on_enemy_baseline(row, pawn_color):
             camp_positions = get_camp_positions(pawn_color)
             for camp_row, camp_col in camp_positions:
-                if pawn_grid[camp_row][camp_col] == 0:  # Camp vide
+                # Vérifier que le camp n'est pas déjà occupé (limite 1 pion par camp)
+                if not is_camp_occupied(camp_row, camp_col, pawn_color):
                     camp_moves.append((camp_row, camp_col))
     
     # Déplacement selon la couleur de la case
@@ -189,23 +190,3 @@ def is_valid_move(from_row, from_col, to_row, to_col, board_grid, pawn_grid, gam
     
     # Vérifier si la position d'arrivée est dans les mouvements possibles
     return (to_row, to_col) in possible_moves
-
-def draw_pawns(screen, pawn_grid, board_x, board_y, cell_size):
-    from assets.colors import Colors
-    BLACK = Colors.BLACK
-    RED = Colors.DARK_RED
-    BLUE = Colors.DARK_BLUE
-
-    for row in range(len(pawn_grid)):
-        for col in range(len(pawn_grid[0])):
-            value = pawn_grid[row][col]
-            if value == 0:
-                continue
-            color = RED if value == 1 else BLUE
-            center = (
-                board_x + col * cell_size + cell_size // 2,
-                board_y + row * cell_size + cell_size // 2
-            )
-            radius = cell_size // 3
-            pygame.draw.circle(screen, color, center, radius)
-            pygame.draw.circle(screen, BLACK, center, radius, 2)

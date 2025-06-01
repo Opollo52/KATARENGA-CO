@@ -2,48 +2,10 @@ import pygame
 import sys
 from pathlib import Path
 from assets.colors import Colors
-from save import save_game
+from assets.audio_manager import audio_manager
+
 
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-
-from save.save_game import save_manager
-from plateau import game_setup
-from menus.hub import show_settings
-
-def prompt_new_or_load(screen):
-    import pygame
-    font = pygame.font.Font(None, 48)
-    running = True
-    while running:
-        screen.fill((30, 30, 30))
-        title = font.render("Choisir une option", True, (255, 255, 255))
-        screen.blit(title, (100, 50))
-
-        new_game_btn = font.render("1 - Nouvelle Partie", True, (0, 255, 0))
-        load_game_btn = font.render("2 - Charger une Partie", True, (0, 200, 255))
-        screen.blit(new_game_btn, (100, 150))
-        screen.blit(load_game_btn, (100, 220))
-
-        pygame.display.flip()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
-                    game_setup.show_game_setup(screen)
-                    show_settings(screen)
-                    running = False
-                elif event.key == pygame.K_2:
-                    save_data = save_manager.load_game()
-                    if save_data:
-                        from plateau.game_board import resume_game_from_save
-                        resume_game_from_save(screen, save_data)
-                    else:
-                        print("Aucune sauvegarde trouvée.")
-
-                
-
 def run_menu(screen):
     # Définition des couleurs
     script_dir = Path(sys.argv[0]).parent.absolute()
@@ -110,17 +72,14 @@ def run_menu(screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if buttons[0].collidepoint(event.pos):
-                prompt_new_or_load(screen)
-                return
-
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 if buttons[0].collidepoint(event.pos):  # Start
+                    audio_manager.play_sound('button_click')  #gestion son
                     # Importer ici pour éviter l'importation circulaire
                     from menus.hub import show_settings
                     show_settings(screen)
                 elif buttons[1].collidepoint(event.pos):  # Quitter
+                    audio_manager.play_sound('button_click')  #gestion son
                     running = False
 
         pygame.display.flip()

@@ -1,5 +1,4 @@
 import pygame
-from save.save_game import save_manager
 from plateau.pawn import get_valid_moves
 
 def is_position_safe_isolation(pawn_grid, row, col, board_grid):
@@ -209,20 +208,9 @@ def run_isolation(screen):
         player_text = font.render(f"Joueur {'Rouge' if current_player == 1 else 'Bleu'}", True, (0, 0, 0))
         screen.blit(player_text, (20, 20))
         
-    
-    pygame.display.flip()
+        pygame.display.flip()
 
-    for event in pygame.event.get():
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if save_button.collidepoint(event.pos):
-                game_state = save_manager.create_game_state(
-                    pawn_grid=pawn_grid,
-                    board_grid=board_grid,
-                    current_player=current_turn,
-                    game_mode=current_game_mode
-                )
-                save_manager.save_game(game_state)
-    
+        for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:

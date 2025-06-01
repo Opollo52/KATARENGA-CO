@@ -1,8 +1,9 @@
 import pygame
 import sys
 from pathlib import Path
-from quadrant_viewer import load_quadrants
+from quadrant.quadrant_viewer import load_quadrants
 from assets.colors import Colors
+from assets.audio_manager import audio_manager
 
 def show_network_quadrant_setup(screen, network_manager, is_server):
     """
@@ -16,17 +17,17 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
         pygame.display.set_caption("Configuration - Joueur Rouge (Haut)")
         my_color = "Rouge"
         quadrant_positions = ["Haut Gauche", "Haut Droite"]
-        quadrant_indices = [0, 1]  # Quadrants 1 et 2
+        quadrant_indices = [0, 1]
         player_color = (200, 50, 50)
     else:
         pygame.display.set_caption("Configuration - Joueur Bleu (Bas)")
         my_color = "Bleu"
-        quadrant_positions = ["Bas Gauche", "Bas Droite"]  
-        quadrant_indices = [2, 3]  # Quadrants 3 et 4
+        quadrant_positions = ["Bas Gauche", "Bas Droite"]
+        quadrant_indices = [2, 3]
         player_color = (50, 50, 200)
     
     # Couleurs
-    script_dir = Path(sys.argv[0]).parent.absolute()
+    script_dir = Path(__file__).parent.parent.absolute()
     background_image = pygame.image.load(str(script_dir / "assets" / "img" / "fond.png"))
     WHITE = Colors.WHITE
     BLACK = Colors.BLACK
@@ -55,27 +56,27 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
                 img = pygame.image.load(str(path_obj))
                 quadrant_images[quadrant_id] = img
     
-    # Configuration de l'interface - plus compacte
-    preview_size = 150  # Taille des aperçus
+    # Configuration de l'interface
+    preview_size = 150
     library_width = 250
     spacing = 20
     
-    # Zone de prévisualisation (côté joueur)
+    # Zone de prévisualisation
     preview_area = pygame.Rect(50, HEIGHT // 4, preview_size * 2 + spacing, preview_size + 100)
     
-    # Zone de la bibliothèque  
+    # Zone de la bibliothèque
     library_area = pygame.Rect(WIDTH - library_width - 30, HEIGHT // 6, library_width, HEIGHT - HEIGHT // 3)
     
     # Positions des slots de prévisualisation
     preview_slots = []
     for i in range(2):
-        x = preview_area.left + i  * (preview_size + spacing) + 600
+        x = preview_area.left + i * (preview_size + spacing) + 600
         y = preview_area.top + 150
         slot = pygame.Rect(x, y, preview_size, preview_size)
         preview_slots.append(slot)
     
     # Quadrants sélectionnés par ce joueur
-    selected_quadrants = [None, None]  # 2 quadrants par joueur
+    selected_quadrants = [None, None]
     quadrant_rotations = [0, 0]
     
     # Variables pour le glisser-déposer
@@ -128,19 +129,16 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
         return rects, total_height
     
     def draw_preview_slot(slot_rect, quadrant_id, rotation, slot_index, highlighted=False):
-        """Dessine un slot de prévisualisation avec fond blanc sous le label"""
+        """Dessine un slot de prévisualisation"""
         border_color = HIGHLIGHT if highlighted else player_color
 
-        # Dessin du slot
         pygame.draw.rect(screen, LIGHT_GRAY, slot_rect)
         pygame.draw.rect(screen, border_color, slot_rect, 3 if highlighted else 2)
 
-        # Label du slot avec fond blanc
         label_text = quadrant_positions[slot_index]
         label_surface = instruction_font.render(label_text, True, BLACK)
         label_rect = label_surface.get_rect(centerx=slot_rect.centerx, bottom=slot_rect.top - 5)
 
-        # Fond blanc sous le label
         padding = 6
         bg_rect = pygame.Rect(
             label_rect.left - padding,
@@ -151,23 +149,19 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
         pygame.draw.rect(screen, WHITE, bg_rect)
         screen.blit(label_surface, label_rect)
 
-        # Affichage de l'image du quadrant si présente
         if quadrant_id and quadrant_id in quadrant_images:
             img = quadrant_images[quadrant_id]
-            # Appliquer la rotation si besoin
             if rotation != 0:
                 img = get_rotated_image(img, rotation)
             thumbnail = pygame.transform.scale(img, (slot_rect.width - 10, slot_rect.height - 10))
             img_rect = thumbnail.get_rect(center=slot_rect.center)
             screen.blit(thumbnail, img_rect.topleft)
 
-            # Numéro de quadrant
             q_num = quadrant_id.split('_')[1]
             num_font = pygame.font.Font(None, 20)
             num_text = num_font.render(q_num, True, BLACK)
             screen.blit(num_text, (slot_rect.right - num_text.get_width() - 5, slot_rect.bottom - num_text.get_height() - 5))
 
-            # Indicateur de rotation
             if rotation != 0:
                 rot_text = num_font.render(f"{rotation}°", True, (200, 0, 0))
                 rot_rect = pygame.Rect(slot_rect.left + 5, slot_rect.bottom - 25, 40, 20)
@@ -176,9 +170,7 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
                 screen.blit(rot_text, (slot_rect.left + 8, slot_rect.bottom - rot_text.get_height() - 8))
     
     def apply_rotation_to_grid(grid, rotation):
-        """
-        Applique une rotation à une grille
-        """
+        """Applique une rotation à une grille"""
         rotated_grid = [row.copy() for row in grid]
         num_rotations = rotation // 90
         for _ in range(num_rotations):
@@ -208,20 +200,17 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
             grid = get_quadrant_grid(quad_id, quadrant_rotations[i])
             my_config.append(grid)
         
-        message_data = {
+        config_data = {
             "player": "server" if is_server else "client",
             "quadrants": my_config,
-            "quadrant_indices": quadrant_indices  # Positions dans le plateau final
+            "quadrant_indices": quadrant_indices,
+            "selected_ids": selected_quadrants,
+            "rotations": quadrant_rotations
         }
         
-        network_manager.send_message("quadrant_config", message_data)
-        print(f"Configuration envoyée: {len(my_config)} quadrants")
+        network_manager.send_message("quadrant_config", config_data)
+        print(f"✅ Configuration envoyée: {len(my_config)} quadrants par {'serveur' if is_server else 'client'}")
         return True
-    
-    def send_ready_signal():
-        """Signale qu'on est prêt à jouer"""
-        network_manager.send_message("game_ready", {"player": "server" if is_server else "client"})
-        print("Signal de jeu envoyé")
     
     # Boutons
     button_y = HEIGHT - 80
@@ -229,9 +218,10 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
     
     # Variables d'état
     configuration_sent = False
+    opponent_config_received = False
+    my_config_data = None
     opponent_config = None
-    waiting_for_opponent = False
-    both_ready = False  # Nouveau : les deux joueurs ont envoyé leur config
+    both_ready = False
     
     # Boucle principale
     running = True
@@ -288,7 +278,6 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
                         thumbnail = pygame.transform.scale(img, (rect.width - 6, rect.height - 6))
                         img_rect = thumbnail.get_rect(center=rect.center)
                         
-                        # Clipping pour la zone visible
                         if img_rect.top < library_area.top:
                             crop_top = library_area.top - img_rect.top
                             img_rect.top = library_area.top
@@ -301,7 +290,6 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
                         if thumbnail.get_height() > 0:
                             screen.blit(thumbnail, img_rect.topleft)
                     
-                    # Numéro du quadrant
                     if rect.bottom <= library_area.bottom:
                         q_num = quadrant_id.split('_')[1]
                         num_font = pygame.font.Font(None, 16)
@@ -329,36 +317,43 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
         screen.blit(text_surf, text_rect)
         
         # Messages d'état
-        if waiting_for_opponent:
-            wait_text = instruction_font.render("En attente de la configuration de l'adversaire...", True, (100, 100, 100))
-            wait_rect = wait_text.get_rect(center=(WIDTH // 2, button_y - 30))
-            screen.blit(wait_text, wait_rect)
-        
-        elif configuration_sent and not opponent_config:
-            ready_text = instruction_font.render("Configuration envoyée ! En attente de l'adversaire...", True, (0, 150, 0))
+        if both_ready:
+            ready_text = instruction_font.render("🚀 Démarrage du jeu...", True, (0, 150, 0))
             ready_rect = ready_text.get_rect(center=(WIDTH // 2, button_y - 30))
             screen.blit(ready_text, ready_rect)
+        elif configuration_sent and opponent_config_received:
+            wait_text = instruction_font.render("✅ Configurations reçues - Préparation du plateau...", True, (0, 100, 150))
+            wait_rect = wait_text.get_rect(center=(WIDTH // 2, button_y - 30))
+            screen.blit(wait_text, wait_rect)
+        elif configuration_sent:
+            ready_text = instruction_font.render("📤 Configuration envoyée ! En attente de l'adversaire...", True, (0, 150, 0))
+            ready_rect = ready_text.get_rect(center=(WIDTH // 2, button_y - 30))
+            screen.blit(ready_text, ready_rect)
+        elif opponent_config_received:
+            wait_text = instruction_font.render("📥 Config adversaire reçue - Envoyez votre configuration!", True, (100, 100, 0))
+            wait_rect = wait_text.get_rect(center=(WIDTH // 2, button_y - 30))
+            screen.blit(wait_text, wait_rect)
         
         # Vérifier les messages réseau
         messages = network_manager.get_messages()
         for message in messages:
             if message['type'] == 'quadrant_config':
                 opponent_config = message['data']
-                print(f"Configuration reçue de l'adversaire")
+                opponent_config_received = True
+                print(f"✅ Configuration reçue de l'adversaire ({'serveur' if not is_server else 'client'})")
                 
-                # Si j'ai déjà envoyé ma config, on peut démarrer
-                if configuration_sent:
-                    print("Les deux configurations sont prêtes - Démarrage du jeu")
+                # Si les deux configs sont prêtes et envoyées, on peut démarrer
+                if configuration_sent and opponent_config_received:
+                    print("🚀 Les deux configurations sont prêtes - Construction du plateau...")
                     both_ready = True
-                    send_ready_signal()  # Confirmer qu'on est prêt
-                    return build_final_board_config(selected_quadrants, quadrant_rotations, opponent_config, is_server)
-            
-            elif message['type'] == 'game_ready':
-                # L'adversaire confirme qu'il est prêt à jouer
-                print("Confirmation de jeu reçue de l'adversaire")
-                if configuration_sent and opponent_config:
-                    print("Tout est prêt - Démarrage du jeu")
-                    return build_final_board_config(selected_quadrants, quadrant_rotations, opponent_config, is_server)
+                    
+                    # Petit délai pour afficher le message
+                    pygame.time.wait(500)
+                    
+                    # Construire et retourner le plateau final
+                    final_config = build_final_board_config(selected_quadrants, quadrant_rotations, opponent_config, is_server)
+                    print("✅ Plateau construit - Démarrage du jeu")
+                    return final_config
         
         # Traitement des événements
         for event in pygame.event.get():
@@ -377,17 +372,23 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
                 elif event.button == 1:  # Clic gauche
                     # Bouton "Prêt"
                     if ready_button.collidepoint(event.pos) and all_selected and not configuration_sent:
+                        audio_manager.play_sound('button_click')
                         if send_my_quadrants():
                             configuration_sent = True
-                            waiting_for_opponent = True
+                            print("📤 Ma configuration envoyée")
                             
-                            # Si on a déjà reçu la config de l'adversaire, on peut démarrer immédiatement
-                            if opponent_config:
-                                print("Config adversaire déjà reçue - Démarrage immédiat")
-                                send_ready_signal()  # Signaler qu'on est prêt
-                                return build_final_board_config(selected_quadrants, quadrant_rotations, opponent_config, is_server)
-                            else:
-                                print("En attente de la configuration de l'adversaire")
+                            # Si l'adversaire a déjà envoyé sa config, on peut démarrer
+                            if opponent_config_received:
+                                print("🚀 Les deux configurations sont prêtes - Construction du plateau...")
+                                both_ready = True
+                                
+                                # Petit délai pour afficher le message
+                                pygame.time.wait(500)
+                                
+                                # Construire et retourner le plateau final
+                                final_config = build_final_board_config(selected_quadrants, quadrant_rotations, opponent_config, is_server)
+                                print("✅ Plateau construit - Démarrage du jeu")
+                                return final_config
                     
                     # Gestion du double-clic pour rotation
                     current_time = pygame.time.get_ticks()
@@ -455,6 +456,7 @@ def build_final_board_config(my_quadrants, my_rotations, opponent_config, is_ser
     """
     Construit la configuration finale du plateau
     """
+    print(f"🔧 Construction du plateau - Je suis {'serveur' if is_server else 'client'}")
     
     def apply_rotation_to_grid(grid, rotation):
         rotated_grid = [row.copy() for row in grid]
@@ -462,7 +464,7 @@ def build_final_board_config(my_quadrants, my_rotations, opponent_config, is_ser
         for _ in range(num_rotations):
             rows = len(rotated_grid)
             cols = len(rotated_grid[0])
-            new_grid = [[0 for i in range(rows)] for j in range(cols)]
+            new_grid = [[0 for _ in range(rows)] for _ in range(cols)]
             for i in range(rows):
                 for j in range(cols):
                     new_grid[j][rows - 1 - i] = rotated_grid[i][j]
@@ -479,27 +481,43 @@ def build_final_board_config(my_quadrants, my_rotations, opponent_config, is_ser
     # Construire ma configuration
     my_grids = []
     for i, quad_id in enumerate(my_quadrants):
-        grid = get_quadrant_grid(quad_id, my_rotations[i])
-        my_grids.append(grid)
+        if quad_id:
+            grid = get_quadrant_grid(quad_id, my_rotations[i])
+            my_grids.append(grid)
+            print(f"  Mon quadrant {i}: {quad_id} (rotation: {my_rotations[i]}°)")
     
     # Récupérer la configuration de l'adversaire
     opponent_grids = opponent_config['quadrants']
+    print(f"  Quadrants adversaire reçus: {len(opponent_grids)}")
     
-    # Assembler le plateau final
+    # Assembler le plateau final selon la position du joueur
     final_quadrants = [None, None, None, None]
     
     if is_server:
-        # Serveur: mes quadrants en haut (0,1), adversaire en bas (2,3)
-        final_quadrants[0] = my_grids[0]      # Haut gauche
-        final_quadrants[1] = my_grids[1]      # Haut droite  
-        final_quadrants[2] = opponent_grids[0] # Bas gauche
-        final_quadrants[3] = opponent_grids[1] # Bas droite
+        # Serveur (Rouge): mes quadrants en haut (0,1), adversaire en bas (2,3)
+        print("  Assemblage serveur: Haut=Mes quadrants, Bas=Adversaire")
+        if len(my_grids) >= 2:
+            final_quadrants[0] = my_grids[0]      # Haut gauche
+            final_quadrants[1] = my_grids[1]      # Haut droite
+        if len(opponent_grids) >= 2:
+            final_quadrants[2] = opponent_grids[0] # Bas gauche  
+            final_quadrants[3] = opponent_grids[1] # Bas droite
     else:
-        # Client: adversaire en haut (0,1), mes quadrants en bas (2,3)
-        final_quadrants[0] = opponent_grids[0] # Haut gauche
-        final_quadrants[1] = opponent_grids[1] # Haut droite
-        final_quadrants[2] = my_grids[0]      # Bas gauche
-        final_quadrants[3] = my_grids[1]      # Bas droite
+        # Client (Bleu): adversaire en haut (0,1), mes quadrants en bas (2,3)
+        print("  Assemblage client: Haut=Adversaire, Bas=Mes quadrants")
+        if len(opponent_grids) >= 2:
+            final_quadrants[0] = opponent_grids[0] # Haut gauche
+            final_quadrants[1] = opponent_grids[1] # Haut droite
+        if len(my_grids) >= 2:
+            final_quadrants[2] = my_grids[0]      # Bas gauche
+            final_quadrants[3] = my_grids[1]      # Bas droite
     
-    print(f"Plateau final assemblé: {'Serveur' if is_server else 'Client'}")
+    # Vérification
+    for i, quad in enumerate(final_quadrants):
+        if quad is None:
+            print(f"⚠️  ERREUR: Quadrant {i} est None!")
+        else:
+            print(f"✅ Quadrant {i}: {len(quad)}x{len(quad[0]) if quad else 0}")
+    
+    print(f"✅ Plateau final assemblé pour {'serveur' if is_server else 'client'}")
     return final_quadrants

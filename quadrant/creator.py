@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from config_manager import initialize_quadrants
 from assets.colors import Colors
+from assets.audio_manager import audio_manager  # ✅ NOUVEAU IMPORT AUDIO
 
 JSON_FILE = "quadrants.json"
 
@@ -16,6 +17,7 @@ def show_creator(screen):
     WHITE = Colors.WHITE
     BLACK = Colors.BLACK
     GREEN = Colors.GREEN
+    DARK_GREEN = Colors.DARK_GREEN
     BLUE = Colors.BLUE
     RED = Colors.RED
     LIGHT_GRAY = Colors.LIGHT_GRAY
@@ -54,12 +56,15 @@ def show_creator(screen):
     }
 
     # Chemin du dossier contenant les images
-    SCRIPT_DIR = Path(sys.argv[0]).parent.absolute()
-    SAVE_DIR = SCRIPT_DIR / config["quadrants_folder"] / "quadrant"
+    SCRIPT_DIR = Path(__file__).parent.parent.absolute()
     
-    # Créer le dossier de sauvegarde s'il n'existe pas
-    SAVE_DIR.mkdir(parents=True, exist_ok=True)
-
+    # ✅ CORRECTION : Structure des dossiers
+    QUADRANTS_MAIN_DIR = SCRIPT_DIR / config["quadrants_folder"]  # Le dossier principal "quadrant"
+    QUADRANTS_SUB_DIR = QUADRANTS_MAIN_DIR / "quadrant"  # Le sous-dossier "quadrant/quadrant"
+    
+    # Créer les dossiers s'ils n'existent pas
+    QUADRANTS_MAIN_DIR.mkdir(exist_ok=True)
+    QUADRANTS_SUB_DIR.mkdir(exist_ok=True)
 
     # Chargement de l'image de fond
     background_image = None
@@ -85,7 +90,7 @@ def show_creator(screen):
 
     class Quadrant:
         def __init__(self):
-            self.grid = [[WHITE for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+            self.grid = [[LIGHT_GRAY for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
             self.history = []
             self.future = []
 
@@ -127,10 +132,11 @@ def show_creator(screen):
         def reset(self):
             self.history.append([row.copy() for row in self.grid])
             self.grid = [[LIGHT_GRAY for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+            self.future.clear()
         
         def good_message(self, screen, message):
             font = pygame.font.Font(None, 28)
-            text_surface = font.render(message, True, GREEN)
+            text_surface = font.render(message, True, DARK_GREEN)
             
             # Créer un fond blanc semi-transparent
             text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT - 70))
@@ -180,10 +186,11 @@ def show_creator(screen):
                 self.show_error_message(screen, "Impossible de sauvegarder : cases blanches !")
                 return
 
+            # ✅ CORRECTION : Charger le JSON depuis le dossier principal
+            json_path = QUADRANTS_MAIN_DIR / JSON_FILE
+            
             # Charger les données JSON existantes ou créer un nouveau dictionnaire
             data = {}
-            json_path = SCRIPT_DIR / JSON_FILE
-            
             if json_path.exists():
                 try:
                     with open(json_path, "r") as f:
@@ -199,9 +206,9 @@ def show_creator(screen):
                 
             quadrant_id = f"quadrant_{next_id}"
             
-            # Sauvegarde de l'image
+            # ✅ CORRECTION : Sauvegarder l'image dans le sous-dossier
             img_filename = f"quadrant_{next_id}.png"
-            img_path = SAVE_DIR / img_filename
+            img_path = QUADRANTS_SUB_DIR / img_filename  # Sauvegarde dans quadrant/quadrant/
             
             # Création de la surface
             quadrant_surface = pygame.Surface((GRID_SIZE * CELL_SIZE, GRID_SIZE * CELL_SIZE))
@@ -232,13 +239,13 @@ def show_creator(screen):
                         row_data.append(0)  # Valeur par défaut si couleur inconnue
                 grid_data.append(row_data)
             
-            # Création de l'entrée dans le dictionnaire pour ce quadrant
+            # ✅ CORRECTION : Chemin relatif correct pour le JSON
             data[quadrant_id] = {
-                "image_path": str(img_path.absolute()),  # Chemin absolu converti en string
+                "image_path": f"quadrant/quadrant/{img_filename}",  # Chemin vers le sous-dossier
                 "grid": grid_data
             }
 
-            # Sauvegarde du fichier JSON
+            # Sauvegarde du fichier JSON dans le dossier principal
             with open(json_path, "w") as f:
                 json.dump(data, f, indent=4)
 
@@ -397,14 +404,13 @@ def show_creator(screen):
                 else:
                     action = menu.get_action(x, y)
                     if action == "Retour":
-                        return
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
+                        running = False  # ✅ CORRECTION : fermer la fenêtre
                     elif action == "Reset":
-                        quadrant.reset()
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
+                        quadrant.reset()  # ✅ CORRECTION : appeler reset() au lieu de reset
                     elif action == "Sauvegarder":
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         quadrant.save()
 
         pygame.display.flip()
-
-
-def run_creator(screen):
-    show_creator(screen)

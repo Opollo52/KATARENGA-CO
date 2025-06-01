@@ -4,6 +4,8 @@ import sys
 from pathlib import Path
 from quadrant.quadrant_viewer import load_quadrants
 from assets.colors import Colors
+from assets.audio_manager import audio_manager  # ✅ NOUVEAU IMPORT AUDIO
+
 def show_game_setup(screen):
     """
     Interface pour configurer une partie en sélectionnant 4 quadrants
@@ -14,7 +16,7 @@ def show_game_setup(screen):
     pygame.display.set_caption("Configuration de partie")
     
     # Couleurs
-    script_dir = Path(sys.argv[0]).parent.absolute()
+    script_dir = Path(__file__).parent.parent.absolute()
     background_image = pygame.image.load(script_dir / "assets" / "img" / "fond.png")
     WHITE = Colors.WHITE
     BLACK = Colors.BLACK    
@@ -59,8 +61,8 @@ def show_game_setup(screen):
         Si les orientations existent déjà, cette fonction ne fait rien.
         """
         need_save = False
-        script_dir = Path(sys.argv[0]).parent.absolute()
-        json_path = script_dir / "quadrants.json"
+        script_dir = Path(__file__).parent.parent.absolute()
+        json_path = script_dir / "quadrant" / "quadrants.json"
         
         for quadrant_id, data in quadrants_data.items():
             # Vérifier si les orientations sont déjà préparées
@@ -317,7 +319,7 @@ def show_game_setup(screen):
         lib_title = button_font.render("Bibliothèque", True, BLACK)
         lib_rect = lib_title.get_rect(center=(library_area.centerx, library_area.bottom + 20))
         lib_bg_rect = lib_rect.inflate(16, 8)
-        lib_bg_surface = pygame.Surface((lib_bg_rect.width, lib_bg_rect.height), pygame.SRCALPHA)
+        lib_bg_surface = pygame.Surface(lib_bg_rect.size)
         lib_bg_surface.fill(WHITE)
         screen.blit(lib_bg_surface, lib_bg_rect)
         screen.blit(lib_title, lib_rect)
@@ -443,18 +445,22 @@ def show_game_setup(screen):
                 elif event.button == 1:
                     # Clic sur le bouton retour
                     if back_button.collidepoint(event.pos):
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         return
                     
                     # Clic sur le bouton commencer
                     if start_button.collidepoint(event.pos) and all_selected:
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         start_game_with_quadrants(selected_quadrants, quadrant_rotations)
                         # Recharger les quadrants après le jeu
                         quadrants = load_quadrants()
                     
                     # Clic sur les boutons de défilement
                     if scroll_up_button.collidepoint(event.pos):
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         scroll_y = max(0, scroll_y - scroll_speed)
                     elif scroll_down_button.collidepoint(event.pos):
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         scroll_y = min(max_scroll, scroll_y + scroll_speed)
                     
                     # Vérifier les clics sur les slots du plateau

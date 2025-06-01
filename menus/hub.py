@@ -4,10 +4,12 @@ from pathlib import Path
 from menus.menu_quadrant import show_quadrant
 from plateau.game_modes import show_game_modes
 from assets.colors import Colors
+from assets.audio_manager import audio_manager 
+from menus.settings_menu import show_settings_menu  
 
 def show_settings(screen):
     # Définition des couleurs
-    script_dir = Path(sys.argv[0]).parent.absolute()
+    script_dir = Path(__file__).parent.parent.absolute()
     background_image = pygame.image.load(script_dir / "assets" / "img" / "fond.png")
     logo_image = pygame.image.load(script_dir / "assets" / "img" / "logo.png")
     WHITE = Colors.WHITE
@@ -74,12 +76,16 @@ def show_settings(screen):
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if buttons[0].collidepoint(event.pos):  # Jouer
+                    audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                     show_game_modes(screen)  # Utilise directement show_game_modes avec le bouton Jouer
                 elif buttons[1].collidepoint(event.pos):  # Quadrant
+                    audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                     show_quadrant(screen)
                 elif buttons[2].collidepoint(event.pos):  # Paramètres
-                    show_settings(screen)
+                    audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
+                    show_settings_menu(screen)  # ✅ NOUVELLE PAGE SETTINGS
                 elif buttons[3].collidepoint(event.pos):  # Quitter
+                    audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                     running = False
 
         pygame.display.flip()

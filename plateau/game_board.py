@@ -4,12 +4,12 @@ import time
 import random
 from pathlib import Path
 from assets.colors import Colors
+from assets.audio_manager import audio_manager  # ✅ NOUVEAU IMPORT AUDIO
 from plateau.pawn import get_valid_moves, highlight_possible_moves, is_valid_move
 from plateau.game_modes import GLOBAL_SELECTED_GAME, GLOBAL_SELECTED_OPPONENT
 from jeux.congress import check_victory, highlight_connected_pawns
 from jeux.isolation import place_pawn, check_isolation_victory
 from jeux.katarenga import check_minimum_pawn_victory_condition
-from save.save_game import save_manager
 
 
 def get_valid_moves_with_mode(row, col, board_grid, pawn_grid, game_mode):
@@ -47,6 +47,9 @@ class Animation:
             board_x + end_col * cell_size + cell_size // 2,
             board_y + end_row * cell_size + cell_size // 2
         )
+        
+        # ✅ NOUVEAU: Jouer le son de déplacement
+        audio_manager.play_sound('pawn_move')
     
     def get_current_pos(self):
         """Retourne la position actuelle du pion en mouvement"""
@@ -118,7 +121,7 @@ class Animation:
         return winner, connected_pawns, game_over
 
 def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected_pawn, animation, current_game_mode):
-    """Dessine les pions avec animations simples"""
+    """Dessine les pions avec animations - Version corrigée pour le réseau"""
     DARK_RED = Colors.DARK_RED
     DARK_BLUE = Colors.DARK_BLUE
     BLACK = Colors.BLACK
@@ -127,11 +130,16 @@ def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected
     moving_pos = animation.get_current_pos()
     moving_pawn_info = animation.moving_pawn
     
-    # Déterminer la taille de la grille selon le mode
-    grid_size = 10  # Toujours 10x10 maintenant pour tous les modes
+    # Déterminer la zone de dessin selon le mode
+    if current_game_mode == 0:  # Katarenga - plateau 10x10 complet
+        grid_range = range(10)
+        offset_row, offset_col = 0, 0
+    else:  # Congress et Isolation - zone 8x8 dans la grille 10x10
+        grid_range = range(1, 9)
+        offset_row, offset_col = 1, 1  # Offset pour l'affichage
     
-    for row in range(grid_size):
-        for col in range(grid_size):
+    for row in grid_range:
+        for col in grid_range:
             if pawn_grid[row][col] > 0:
                 # Skip le pion en mouvement à sa position D'ORIGINE
                 if (moving_pawn_info and 
@@ -140,10 +148,13 @@ def draw_animated_pawns(screen, pawn_grid, board_x, board_y, cell_size, selected
                 
                 pawn_color = DARK_RED if pawn_grid[row][col] == 1 else DARK_BLUE
                 
-                # Position normale du pion
+                # Position normale du pion - ajustée pour l'affichage
+                display_row = row - offset_row
+                display_col = col - offset_col
+                
                 pawn_center = (
-                    board_x + col * cell_size + cell_size // 2,
-                    board_y + row * cell_size + cell_size // 2
+                    board_x + display_col * cell_size + cell_size // 2,
+                    board_y + display_row * cell_size + cell_size // 2
                 )
                 
                 # Rayon normal
@@ -389,31 +400,14 @@ def isolation_ai(pawn_grid, board_grid, current_player):
     # Choisir une position aléatoire
     return random.choice(valid_positions)
 
-def start_game(screen, quadrants_data, loaded_state=None):
-    if loaded_state:
-        pawn_grid = loaded_state['pawn_grid']
-        current_player = loaded_state['current_player']
-        current_game_mode = loaded_state['game_mode']
-        winner = loaded_state.get('winner', 0)
-        game_over = loaded_state.get('game_over', False)
-        connected_pawns = loaded_state.get('connected_pawns', [])
-        board_grid = create_game_board(loaded_state.get('quadrants_data'))
-        from jeux.katarenga import reset_camps
-        reset_camps()  # Réinitialiser les camps si Katarenga
-    else:
-        from plateau.game_modes import GLOBAL_SELECTED_GAME
-        current_game_mode = GLOBAL_SELECTED_GAME
-        pawn_grid = initialize_pawns_for_game_mode(current_game_mode)
-        current_player = 1
-        winner = 0
-        game_over = False
-        connected_pawns = []
-        board_grid = create_game_board(quadrants_data)
-
+def start_game(screen, quadrants_data):
+    """
+    Lance le jeu avec les quadrants sélectionnés
+    """
     pygame.display.set_caption("Partie en cours")
 
     # Couleurs
-    script_dir = Path(sys.argv[0]).parent.absolute()
+    script_dir = Path(__file__).parent.parent.absolute()
     background_image = pygame.image.load(script_dir / "assets" / "img" / "fond.png")
     
     WHITE = Colors.WHITE
@@ -426,7 +420,7 @@ def start_game(screen, quadrants_data, loaded_state=None):
     DARK_RED = Colors.DARK_RED
     
     # Chargement des images
-    PATH = Path(sys.argv[0]).parent.absolute()
+    PATH = Path(__file__).parent.parent.absolute()
     
     # Dictionnaire des valeurs de cellule aux images
     images = {}
@@ -528,8 +522,6 @@ def start_game(screen, quadrants_data, loaded_state=None):
         
         # Boutons
         back_button = pygame.Rect(20, 20, 80, 30)
-        save_button = pygame.Rect(20, 80, 80, 30)
-
         
         background_scaled = pygame.transform.scale(background_image, screen.get_size())
         screen.blit(background_scaled, (0, 0))        
@@ -676,15 +668,6 @@ def start_game(screen, quadrants_data, loaded_state=None):
         back_text = font.render("Abandonner", True, WHITE)
         back_text_rect = back_text.get_rect(center=back_button.center)
         screen.blit(back_text, back_text_rect)
-
-        # Dessiner le bouton sauvegarde
-        save_button = pygame.Rect(save_button.x, save_button.y + 50, text_width + 20, text_height + 10)
-        pygame.draw.rect(screen, (0, 150, 255), save_button)
-        font = pygame.font.Font(None, 30)
-        text = font.render("Sauvegarder", True, (255, 255, 255))
-        screen.blit(text, (save_button.x + 10, save_button.y + 10))
-
-        
         
         # Traitement de l'IA - SEULEMENT si mode Ordi sélectionné
         if (not game_over and current_player == 2 and not animation.is_moving() and 
@@ -730,6 +713,7 @@ def start_game(screen, quadrants_data, loaded_state=None):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # Quitter bouton abandonner
                 if back_button.collidepoint(event.pos):
+                    audio_manager.play_sound('button_click')  # ✅ SON BOUTON
                     choice = display_victory_message(screen, 0)
                     if choice == "rejouer":
                         # Relancer le game_setup pour rejouer
@@ -738,21 +722,6 @@ def start_game(screen, quadrants_data, loaded_state=None):
                     elif choice == "quitter":
                         # Retourner au hub
                         return
-
-                elif save_button.collidepoint(event.pos):
-                    game_state = save_manager.create_game_state(
-                        pawn_grid=pawn_grid,
-                        board_grid=board_grid,
-                        current_player=current_player,
-                        game_mode=current_game_mode,
-                        selected_pawn=selected_pawn if 'selected_pawn' in locals() else None,
-                        game_over=game_over if 'game_over' in locals() else False,
-                        winner=winner if 'winner' in locals() else 0,
-                        connected_pawns=connected_pawns if 'connected_pawns' in locals() else None,
-                        quadrants_data=quadrants_data if 'quadrants_data' in locals() else None
-                    )
-                    save_manager.save_game(game_state)
-
                 
                 # clic sur le plateau (seulement si le jeu n'est pas terminé et aucune animation)
                 if not game_over and not animation.is_moving():
@@ -856,6 +825,7 @@ def start_game(screen, quadrants_data, loaded_state=None):
                                 # Si on peut placer le pion, le faire
                                 if can_place:
                                     pawn_grid[row][col] = current_player
+                                    audio_manager.play_sound('pawn_move')  # ✅ SON PLACEMENT PION
                                     
                                     # Vérifier si l'adversaire peut encore jouer
                                     from jeux.isolation import check_isolation_victory
@@ -881,6 +851,7 @@ def start_game(screen, quadrants_data, loaded_state=None):
                                                 # Placement direct dans un camp
                                                 if place_in_camp(row, col, pawn_grid, current_player):
                                                     pawn_grid[selected_row][selected_col] = 0
+                                                    audio_manager.play_sound('pawn_move')  # ✅ SON MOUVEMENT
                                                     winner = check_katarenga_victory()
                                                     game_over = winner > 0
                                                     if not game_over:
@@ -1029,14 +1000,18 @@ def display_victory_message(screen, winner):
                 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if rejouer_button.collidepoint(event.pos):
+                    audio_manager.play_sound('button_click')  # ✅ SON BOUTON
                     return "rejouer"
                 elif quitter_button.collidepoint(event.pos):
+                    audio_manager.play_sound('button_click')  # ✅ SON BOUTON
                     return "quitter"
                     
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    audio_manager.play_sound('button_click')  # ✅ SON BOUTON
                     return "quitter"
                 elif event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
+                    audio_manager.play_sound('button_click')  # ✅ SON BOUTON
                     return "rejouer"
         
         clock.tick(60)
@@ -1071,9 +1046,3 @@ def randomAi(pawn_grid, board_grid, current_player, game_mode):
     chosen_move = random.choice(possible_moves)
     
     return chosen_move  # Retourne (from_row, from_col, (to_row, to_col))
-
-
-def resume_game_from_save(screen, save_data):
-    from plateau.game_board import start_game
-    quadrants_data = save_data.get('quadrants_data')
-    start_game(screen, quadrants_data, loaded_state=save_data)

@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from config_manager import initialize_quadrants
 from assets.colors import Colors
+from assets.audio_manager import audio_manager  # ✅ NOUVEAU IMPORT AUDIO
 
 def load_quadrants():
     """Charge les quadrants depuis le fichier JSON en initialisant si nécessaire"""
@@ -20,7 +21,7 @@ def show_quadrant_library(screen):
     pygame.display.set_caption("Bibliothèque de Quadrants")
     
     # Couleurs
-    script_dir = Path(sys.argv[0]).parent.absolute()
+    script_dir = Path(__file__).parent.parent.absolute()
     background_image = pygame.image.load(script_dir / "assets" / "img" / "fond.png")
     WHITE = Colors.WHITE
     BLACK = Colors.BLACK
@@ -237,8 +238,10 @@ def show_quadrant_library(screen):
                     # Clic sur les boutons de défilement
                     if event.button == 1:  # Clic gauche
                         if scroll_up_button.collidepoint(event.pos):
+                            audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                             scroll_y = max(0, scroll_y - scroll_speed)
                         elif scroll_down_button.collidepoint(event.pos):
+                            audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                             scroll_y = min(max_scroll, scroll_y + scroll_speed)
                         
                         # Vérifier si un quadrant a été cliqué
@@ -257,18 +260,22 @@ def show_quadrant_library(screen):
                         
                         # Clic sur le bouton retour
                         if back_button.collidepoint(event.pos):
+                            audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                             return
                 else:
                     # En mode détail
                     if event.button == 1:  # Clic gauche
                         # Clic sur le bouton retour spécifique au mode détail
                         if detail_back_button.collidepoint(event.pos):
+                            audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                             view_mode = "library"
                         # Clic sur le bouton retour principal (en bas)
                         elif back_button.collidepoint(event.pos):
+                            audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                             return
                         # Tout autre clic (sauf sur les boutons) revient à la bibliothèque
                         elif not back_button.collidepoint(event.pos):
+                            audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON (clic général)
                             view_mode = "library"
             
         pygame.display.flip()

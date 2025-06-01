@@ -2,6 +2,7 @@ import pygame
 import sys
 from pathlib import Path
 from assets.colors import Colors
+from assets.audio_manager import audio_manager  # ✅ NOUVEAU IMPORT AUDIO
 
 # Variables globales pour garder le mode de jeu et l'adversaire
 GLOBAL_SELECTED_GAME = 0 
@@ -27,7 +28,7 @@ def show_game_modes(screen):
     WIDTH, HEIGHT = screen.get_width(), screen.get_height()
     pygame.display.set_caption("Sélection du mode de jeu")
     #couleurs
-    script_dir = Path(sys.argv[0]).parent.absolute()
+    script_dir = Path(__file__).parent.parent.absolute()
     background_image = pygame.image.load(script_dir / "assets" / "img" / "fond.png")
     BLACK = Colors.BLACK
     GREEN = Colors.GREEN 
@@ -227,6 +228,7 @@ def show_game_modes(screen):
                 # Vérifier si un bouton de type de jeu a été cliqué
                 for i, rect in enumerate(game_buttons):
                     if rect.collidepoint(event.pos):
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         selected_game = i
                         GLOBAL_SELECTED_GAME = i  # BUG FIX 1: Mise à jour immédiate
                         FIRST_RUN = False
@@ -234,12 +236,14 @@ def show_game_modes(screen):
                 # Vérifier si un bouton d'adversaire a été cliqué
                 for i, rect in enumerate(opponent_buttons):
                     if rect.collidepoint(event.pos):
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         selected_opponent = i
                         GLOBAL_SELECTED_OPPONENT = i  # BUG FIX 1: Mise à jour immédiate
                         FIRST_RUN = False
                 
                 # Vérifier si le bouton Jouer a été cliqué
                 if play_button.collidepoint(event.pos):
+                    audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                     # BUG FIX 1: S'assurer que les variables globales sont à jour
                     GLOBAL_SELECTED_GAME = selected_game
                     GLOBAL_SELECTED_OPPONENT = selected_opponent
@@ -254,7 +258,7 @@ def show_game_modes(screen):
                         except ImportError as e:
                             print(f"Erreur d'import network_menu: {e}")
                             # Fallback vers le jeu normal si le module réseau n'est pas disponible
-                            from game_setup import show_game_setup
+                            from plateau.game_setup import show_game_setup
                             running = False
                             show_game_setup(screen)
                     else:
@@ -265,6 +269,7 @@ def show_game_modes(screen):
                 
                 # Vérifier si le bouton Retour a été cliqué
                 if back_button.collidepoint(event.pos):
+                    audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                     print(f"Mode sélectionné: {game_types[selected_game]} - {opponent_types[selected_opponent]}")
                     running = False
         

@@ -3,7 +3,8 @@ import sys
 import threading
 from pathlib import Path
 from assets.colors import Colors
-from network_manager import NetworkManager
+from assets.audio_manager import audio_manager  # ✅ NOUVEAU IMPORT AUDIO
+from résseaux.network_manager import NetworkManager
 
 def show_network_menu(screen):
     """
@@ -13,7 +14,7 @@ def show_network_menu(screen):
     pygame.display.set_caption("Jeu en réseau")
     
     # Couleurs et ressources
-    script_dir = Path(sys.argv[0]).parent.absolute()
+    script_dir = Path(__file__).parent.parent.absolute()
     background_image = pygame.image.load(str(script_dir / "assets" / "img" / "fond.png"))
     
     WHITE = Colors.WHITE
@@ -234,6 +235,7 @@ def show_network_menu(screen):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if mode == "menu":
                     if host_button.collidepoint(event.pos):
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         mode = "host"
                         status_message = ""
                         connection_thread = threading.Thread(target=start_server_thread)
@@ -241,11 +243,13 @@ def show_network_menu(screen):
                         connection_thread.start()
                     
                     elif join_button.collidepoint(event.pos):
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         mode = "join"
                         status_message = ""
                         input_text = ""
                     
                     elif back_button.collidepoint(event.pos):
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         network_manager.disconnect()
                         return
                 
@@ -256,25 +260,29 @@ def show_network_menu(screen):
                         input_active = False
                     
                     if connect_button.collidepoint(event.pos) and input_text.strip():
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         mode = "connecting"
                         connection_thread = threading.Thread(target=connect_to_server_thread, args=(input_text.strip(),))
                         connection_thread.daemon = True
                         connection_thread.start()
                     
                     elif cancel_button.collidepoint(event.pos):
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         mode = "menu"
                         input_text = ""
                         input_active = False
                 
                 elif mode == "host":
                     if cancel_button.collidepoint(event.pos):
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         network_manager.disconnect()
                         mode = "menu"
                 
                 elif mode == "connected":
                     if start_game_button.collidepoint(event.pos):
+                        audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                         # Lancer le jeu en réseau
-                        from network_game import start_network_game
+                        from résseaux.network_game import start_network_game
                         start_network_game(screen, network_manager)
                         # Après le jeu, revenir au menu
                         mode = "menu"
@@ -285,6 +293,7 @@ def show_network_menu(screen):
                 if event.key == pygame.K_BACKSPACE:
                     input_text = input_text[:-1]
                 elif event.key == pygame.K_RETURN and input_text.strip():
+                    audio_manager.play_sound('button_click')  # ✅ NOUVEAU SON
                     mode = "connecting"
                     connection_thread = threading.Thread(target=connect_to_server_thread, args=(input_text.strip(),))
                     connection_thread.daemon = True
