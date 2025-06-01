@@ -16,7 +16,7 @@ def read_config():
     }
     
     try:
-        # ✅ CORRECTION: Chercher config.txt à la racine du projet
+        
         if Path(__file__).name == "config_manager.py" and "quadrant" in str(Path(__file__).parent):
             # Si on est dans le dossier quadrant, remonter à la racine
             project_root = Path(__file__).parent.parent.absolute()
@@ -61,7 +61,6 @@ def create_default_quadrants(config):
     """
     Crée les quadrants par défaut basés sur l'image
     """
-    # ✅ CORRECTION: Déterminer la racine du projet correctement
     if Path(__file__).name == "config_manager.py" and "quadrant" in str(Path(__file__).parent):
         # Si on est dans le dossier quadrant, remonter à la racine
         project_root = Path(__file__).parent.parent.absolute()
@@ -69,7 +68,6 @@ def create_default_quadrants(config):
         # Si on est déjà à la racine
         project_root = Path(sys.argv[0]).parent.absolute()
     
-    # ✅ CORRECTION: Créer les fichiers aux bons endroits
     json_path = project_root / "quadrant" / "quadrants.json"  # Dans le dossier quadrant
     quadrants_folder = project_root / "quadrant"              # Dossier quadrant pour les images
     assets_folder = project_root / "assets"                   # Dossier assets à la racine
@@ -144,7 +142,6 @@ def create_default_quadrants(config):
     # Pygame setup
     pygame.init()
     
-    # ✅ CORRECTION: Charger les images depuis le bon dossier assets
     images = {
         1: pygame.image.load(assets_folder / "img" / "yellow.png"),  
         2: pygame.image.load(assets_folder / "img" / "green.png"),   
@@ -164,7 +161,6 @@ def create_default_quadrants(config):
         quadrant_num = i + 1
         quadrant_id = f"quadrant_{quadrant_num}"
         
-        # ✅ CORRECTION: Sauvegarder les images dans le dossier quadrant
         img_filename = f"quadrant_{quadrant_num}.png"
         subfolder = quadrants_folder / "quadrant"
         subfolder.mkdir(exist_ok=True)  # Crée le sous-dossier s'il n'existe pas
@@ -193,21 +189,20 @@ def create_default_quadrants(config):
             # Sauvegarder l'image
             pygame.image.save(surface, img_path)
         
-        # ✅ CORRECTION: Utiliser un chemin relatif pour compatibilité
         relative_path = f"quadrant/quadrant/{img_filename}"
 
         # Ajouter au dictionnaire de données
         quadrants_data[quadrant_id] = {
-            "image_path": relative_path,  # ✅ Chemin relatif au lieu d'absolu
+            "image_path": relative_path,  #  Chemin relatif 
             "grid": grid
         }
     
     # Sauvegarder le JSON dans le dossier quadrant
     try:
         json_path.write_text(json.dumps(quadrants_data, indent=4))
-        print(f"✅ Quadrants sauvegardés dans: {json_path}")
+        print(f" Quadrants sauvegardés dans: {json_path}")
     except Exception as e:
-        print(f"❌ Erreur sauvegarde: {e}")
+        print(f" Erreur sauvegarde: {e}")
         pass
     
     return quadrants_data
