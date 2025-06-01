@@ -209,7 +209,7 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
         }
         
         network_manager.send_message("quadrant_config", config_data)
-        print(f"✅ Configuration envoyée: {len(my_config)} quadrants par {'serveur' if is_server else 'client'}")
+        print(f" Configuration envoyée: {len(my_config)} quadrants par {'serveur' if is_server else 'client'}")
         return True
     
     # Boutons
@@ -318,19 +318,19 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
         
         # Messages d'état
         if both_ready:
-            ready_text = instruction_font.render("🚀 Démarrage du jeu...", True, (0, 150, 0))
+            ready_text = instruction_font.render(" Démarrage du jeu...", True, (0, 150, 0))
             ready_rect = ready_text.get_rect(center=(WIDTH // 2, button_y - 30))
             screen.blit(ready_text, ready_rect)
         elif configuration_sent and opponent_config_received:
-            wait_text = instruction_font.render("✅ Configurations reçues - Préparation du plateau...", True, (0, 100, 150))
+            wait_text = instruction_font.render(" Configurations reçues - Préparation du plateau...", True, (0, 100, 150))
             wait_rect = wait_text.get_rect(center=(WIDTH // 2, button_y - 30))
             screen.blit(wait_text, wait_rect)
         elif configuration_sent:
-            ready_text = instruction_font.render("📤 Configuration envoyée ! En attente de l'adversaire...", True, (0, 150, 0))
+            ready_text = instruction_font.render(" Configuration envoyée ! En attente de l'adversaire...", True, (0, 150, 0))
             ready_rect = ready_text.get_rect(center=(WIDTH // 2, button_y - 30))
             screen.blit(ready_text, ready_rect)
         elif opponent_config_received:
-            wait_text = instruction_font.render("📥 Config adversaire reçue - Envoyez votre configuration!", True, (100, 100, 0))
+            wait_text = instruction_font.render("Config adversaire reçue - Envoyez votre configuration!", True, (100, 100, 0))
             wait_rect = wait_text.get_rect(center=(WIDTH // 2, button_y - 30))
             screen.blit(wait_text, wait_rect)
         
@@ -340,11 +340,11 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
             if message['type'] == 'quadrant_config':
                 opponent_config = message['data']
                 opponent_config_received = True
-                print(f"✅ Configuration reçue de l'adversaire ({'serveur' if not is_server else 'client'})")
+                print(f" Configuration reçue de l'adversaire ({'serveur' if not is_server else 'client'})")
                 
                 # Si les deux configs sont prêtes et envoyées, on peut démarrer
                 if configuration_sent and opponent_config_received:
-                    print("🚀 Les deux configurations sont prêtes - Construction du plateau...")
+                    print(" Les deux configurations sont prêtes - Construction du plateau...")
                     both_ready = True
                     
                     # Petit délai pour afficher le message
@@ -352,7 +352,7 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
                     
                     # Construire et retourner le plateau final
                     final_config = build_final_board_config(selected_quadrants, quadrant_rotations, opponent_config, is_server)
-                    print("✅ Plateau construit - Démarrage du jeu")
+                    print(" Plateau construit - Démarrage du jeu")
                     return final_config
         
         # Traitement des événements
@@ -375,11 +375,11 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
                         audio_manager.play_sound('button_click')
                         if send_my_quadrants():
                             configuration_sent = True
-                            print("📤 Ma configuration envoyée")
+                            print(" Ma configuration envoyée")
                             
                             # Si l'adversaire a déjà envoyé sa config, on peut démarrer
                             if opponent_config_received:
-                                print("🚀 Les deux configurations sont prêtes - Construction du plateau...")
+                                print(" Les deux configurations sont prêtes - Construction du plateau...")
                                 both_ready = True
                                 
                                 # Petit délai pour afficher le message
@@ -387,7 +387,7 @@ def show_network_quadrant_setup(screen, network_manager, is_server):
                                 
                                 # Construire et retourner le plateau final
                                 final_config = build_final_board_config(selected_quadrants, quadrant_rotations, opponent_config, is_server)
-                                print("✅ Plateau construit - Démarrage du jeu")
+                                print(" Plateau construit - Démarrage du jeu")
                                 return final_config
                     
                     # Gestion du double-clic pour rotation
@@ -515,9 +515,9 @@ def build_final_board_config(my_quadrants, my_rotations, opponent_config, is_ser
     # Vérification
     for i, quad in enumerate(final_quadrants):
         if quad is None:
-            print(f"⚠️  ERREUR: Quadrant {i} est None!")
+            print(f"  ERREUR: Quadrant {i} est None!")
         else:
-            print(f"✅ Quadrant {i}: {len(quad)}x{len(quad[0]) if quad else 0}")
+            print(f" Quadrant {i}: {len(quad)}x{len(quad[0]) if quad else 0}")
     
-    print(f"✅ Plateau final assemblé pour {'serveur' if is_server else 'client'}")
+    print(f" Plateau final assemblé pour {'serveur' if is_server else 'client'}")
     return final_quadrants
