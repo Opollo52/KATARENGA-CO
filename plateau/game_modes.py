@@ -252,7 +252,7 @@ def show_game_modes(screen):
                     
                     if selected_opponent == 2:  # Réseau
                         try:
-                            from résseaux.network_menu import show_network_menu
+                            from réseaux.network_menu import show_network_menu
                             running = False
                             show_network_menu(screen)
                         except ImportError as e:

@@ -7,7 +7,7 @@ class Pawn:
         self.color = color
         self.selected = False
 
-def get_valid_moves(row, col, board_grid, pawn_grid, game_mode, turn_count=0):
+def get_valid_moves(row, col, board_grid, pawn_grid, game_mode=None):
     """
     Obtenir les mouvements valides d'un pion à une position donnée.
     Gestion unifiée pour tous les modes de jeu avec grille 10x10 harmonisée.
@@ -161,11 +161,6 @@ def get_valid_moves(row, col, board_grid, pawn_grid, game_mode, turn_count=0):
     # Ajouter les mouvements vers les camps pour Katarenga
     if game_mode == 0:
         possible_moves.extend(camp_moves)
-
-        # Bloquer les captures pendant les deux premiers tours en Katarenga
-    if game_mode == 0 and turn_count < 2:
-        possible_moves = [(r, c) for (r, c) in possible_moves if pawn_grid[r][c] == 0]
-
     
     return possible_moves
 
