@@ -12,12 +12,12 @@ from jeux.katarenga import check_minimum_pawn_victory_condition
 from assets.audio_manager import audio_manager
 
 
-def get_valid_moves_with_mode(row, col, board_grid, pawn_grid, game_mode):
+def get_valid_moves_with_mode(row, col, board_grid, pawn_grid, game_mode, turn_count=0):
     """
     Version locale de get_valid_moves qui utilise maintenant pawn.py pour tout
     """
     from plateau.pawn import get_valid_moves
-    return get_valid_moves(row, col, board_grid, pawn_grid, game_mode)
+    return get_valid_moves(row, col, board_grid, pawn_grid, game_mode, turn_count)
 
 # Version améliorée de la classe Animation
 class Animation:
@@ -524,6 +524,7 @@ def start_game(screen, quadrants_data):
     animation = Animation()
     
     # Variables pour la gestion du jeu
+    turn_count = 0
     selected_pawn = None 
     possible_moves = []  
     current_player = 1  
@@ -698,7 +699,8 @@ def start_game(screen, quadrants_data):
                     if not game_over:
                         current_player = 3 - current_player
                     animation.complete_animation()
-                    continue
+                turn_count += 1
+                continue
 
         if not animation.is_moving() and animation.has_pending_move():
             winner_result, connected_result, game_over_result = animation.execute_pending_move(pawn_grid, current_game_mode)
@@ -720,6 +722,7 @@ def start_game(screen, quadrants_data):
                 current_player = 3 - current_player
 
             animation.complete_animation()
+            turn_count += 1
 
         
         # Dessiner les mouvements possibles
@@ -976,7 +979,7 @@ def start_game(screen, quadrants_data):
                                     elif pawn_grid[row][col] == current_player:
                                         # Sélectionner ce nouveau pion
                                         selected_pawn = (row, col)
-                                        possible_moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, current_game_mode)
+                                        possible_moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, current_game_mode, turn_count)
                                     
                                     # Si le clic est ailleurs, annuler la sélection
                                     else:
@@ -989,12 +992,12 @@ def start_game(screen, quadrants_data):
                                     if current_game_mode == 0:
                                         if 0 <= row < 10 and 0 <= col < 10 and pawn_grid[row][col] == current_player:
                                             selected_pawn = (row, col)
-                                            possible_moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, current_game_mode)
+                                            possible_moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, current_game_mode, turn_count)
                                     else:
                                         # Pour Congress, limiter à la zone 8x8
                                         if 1 <= row <= 8 and 1 <= col <= 8 and pawn_grid[row][col] == current_player:
                                             selected_pawn = (row, col)
-                                            possible_moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, current_game_mode)
+                                            possible_moves = get_valid_moves_with_mode(row, col, board_grid, pawn_grid, current_game_mode, turn_count)
                 
         pygame.display.flip()
         clock.tick(60)  # 60 FPS pour des animations fluides
